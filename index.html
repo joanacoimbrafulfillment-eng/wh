@@ -77,6 +77,19 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         input, textarea, select { width: 100%; padding: 15px; margin: 8px 0; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; }
         .location-tag { background: #fee2e2; color: #991b1b; padding: 5px 12px; border-radius: 8px; font-weight: 900; font-size: 20px; margin-left: auto; border: 1px solid #f87171; }
+    
+        /* ✅ CANCELLED IDs (red strike) */
+        .cancelled-id {
+          color: var(--error);
+          font-weight: 900;
+          text-decoration: line-through;
+          text-decoration-color: var(--error);
+          text-decoration-thickness: 3px;
+        }
+        .cancelled-row {
+          background: #fff5f5;
+        }
+
     </style>
 </head>
 <body>
@@ -1162,13 +1175,32 @@ function handleScan(v, mode) {
                 tbody.innerHTML += `<tr><td>${k}</td><td>${readOnly ? it.q : `<input type="number" style="width:70px;" value="${it.q}" onchange="db.ref('active_batches/${batchId}/inventory/${k}/q').set(parseInt(this.value))">`}</td><td>${it.pos}</td>${readOnly ? '' : `<td><button class="btn-small btn-delete" onclick="db.ref('active_batches/${batchId}/inventory/${k}').remove()">X</button></td>`}</tr>`;
             });
             const idsList = document.getElementById('edit-ids-list');
-            let html = '<table><thead><tr><th>ID</th><th>Cliente</th><th>Status</th><th>Ação</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>ID</th><th>Cliente</th><th>Content</th><th>Status</th><th>Ação</th></tr></thead><tbody>';
             (b.expected_ids||[]).forEach(id => {
                 const isPack = (b.processed_ids && b.processed_ids[id]);
+                const isCancel = (b.cancelled_ids && b.cancelled_ids[id]);
                 const det = (b.order_details||{})[id] || {name:"N/A"};
-                html += `<tr><td><b>${id}</b></td><td>${det.name}</td><td style="color:${isPack?'green':'orange'}">${isPack?'PACKED':'PENDING'}</td><td>${readOnly ? '' : `<button class="btn-small btn-delete" onclick="cancelBatchId('${batchId}', '${id}')">CANCEL</button>`}</td></tr>`;
+                const cancelInfo = isCancel ? b.cancelled_ids[id] : null;
+
+                const statusTxt = isCancel ? 'CANCELLED' : (isPack ? 'PACKED' : 'PENDING');
+                const statusColor = isCancel ? 'var(--error)' : (isPack ? 'green' : 'orange');
+                const rowCls = isCancel ? 'cancelled-row' : '';
+                const idCls = isCancel ? 'cancelled-id' : '';
+                const reason = cancelInfo ? (cancelInfo.reason || '') : '';
+
+                html += `<tr class="${rowCls}">
+                            <td>
+                                <b class="${idCls}" title="${reason ? ('CANCELLED: ' + reason) : ''}">${id}</b>
+                            </td>
+                            <td>${det.name}</td>
+                            <td><small>${det.content || 'N/A'}</small></td>
+                            <td style="color:${statusColor}; font-weight:900;">${statusTxt}</td>
+                            <td>${
+                                readOnly ? '' : (isCancel ? '' : `<button class="btn-small btn-delete" onclick="cancelBatchId('${batchId}', '${id}')">CANCEL</button>`)
+                            }</td>
+                         </tr>`;
             });
-            idsList.innerHTML = html + '</tbody></table>';
+idsList.innerHTML = html + '</tbody></table>';
             const logBox = document.getElementById('qty-modification-log'); logBox.innerHTML = "";
             if(b.history) { Object.values(b.history).reverse().forEach(log => { logBox.innerHTML += `<div style="border-bottom:1px solid #eee; padding:4px;"><b>[${log.time}] ${log.user}:</b> ${log.msg}</div>`; }); }
             const cancelBox = document.getElementById('cancelled-ids-log'); cancelBox.innerHTML = "";
