@@ -612,7 +612,7 @@ document.addEventListener('click', (e) => {
                         Status: status,
                         Cancel_Reason: cancelInfo ? (cancelInfo.reason || "") : "",
                         Cancelled_By: cancelInfo ? (cancelInfo.user || "") : "",
-                        Cancelled_At: cancelInfo ? (cancelInfo.time || "") : "",
+                        Cancelled_At: cancelInfo ? (_normalizeDT(cancelInfo.DateTime || (cancelInfo.dateClean && cancelInfo.time ? _dtKey(cancelInfo.dateClean, cancelInfo.time) : cancelInfo.time), (b.dateClean || "")) || "") : "",
                         Packed_By: packRec ? (packRec.user || "") : "",
                         Packed_Date: packRec ? (packRec.dateClean || "") : "",
                         Packed_Start_Time: packRec ? (packRec.startTime || "") : "",
@@ -645,7 +645,7 @@ function handleScan(v, mode) {
             const prodName = masterProductsDB[key]; scanData.prods.push(prodName);
         } else if(/^\d{8}$/.test(v)) {
             // RECORD START TIME ON FIRST SCAN OF ID
-            if(!scanData.id) scanData.startTime = new Date().toLocaleTimeString('pt-PT');
+            if(!scanData.id) scanData.startTime = _nowTime();
             scanData.id = v; if(m === 'PACKING') showMetadata(v); 
         } else {
             scanData.track = v;
@@ -659,7 +659,9 @@ function handleScan(v, mode) {
         const bId = document.getElementById('wh-batch-select').value;
         if(!scanData.id || !scanData.track) return alert("Faltam dados!");
 
-        const endTime = new Date().toLocaleTimeString('pt-PT');
+        const dc = _nowDateClean();
+
+        const endTime = _nowTime();
 
         try {
             if(m === 'PACKING' && bId) {
@@ -676,7 +678,9 @@ function handleScan(v, mode) {
                 startTime: scanData.startTime || endTime,
                 endTime: endTime,
                 time: endTime, // Main sorting time
-                dateClean: new Date().toISOString().split('T')[0] 
+                dateClean: dc,
+                DateTime: _dtKey(dc, endTime),
+                ts: Date.now() 
             });
             resetScan(); 
         } catch (e) { alert("Erro ao gravar."); }
@@ -700,11 +704,56 @@ function handleScan(v, mode) {
 
     function _fmt(val) { return (val === undefined || val === null) ? "" : String(val); }
 
-    function _dtKey(dateClean, timeStr) {
-        return (_fmt(dateClean) + " " + _fmt(timeStr)).trim();
+    function _nowDateClean(){
+        return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     }
 
-    function _parseIds(raw) {
+    function _nowTime(){
+        // HH:mm:ss always (24h). Storage must not depend on locale quirks.
+        return new Intl.DateTimeFormat('pt-PT', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+        }).format(new Date());
+    }
+
+    function _dtKey(dateClean, timeStr) {
+        return (_fmt(dateClean) + " " + _fmt(timeStr)).trim(); // YYYY-MM-DD HH:mm:ss
+    }
+
+    function _nowDateTime(){
+        const dc = _nowDateClean();
+        const tm = _nowTime();
+        return _dtKey(dc, tm);
+    }
+
+    function _ptLocaleToDateTime(str){
+        // Accepts: "DD/MM/YYYY, HH:MM:SS" or "DD/MM/YYYY HH:MM" etc.
+        const s = _fmt(str).trim();
+        const m = s.match(/(\d{2})\/(\d{2})\/(\d{4}).*?(\d{2}):(\d{2})(?::(\d{2}))?/);
+        if(!m) return "";
+        const dd=m[1], mm=m[2], yyyy=m[3], hh=m[4], mi=m[5], ss=(m[6]||"00");
+        return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function _normalizeDT(val, dateCleanFallback){
+        const s = _fmt(val).trim();
+        if(!s) return "";
+        // Already ISO-ish
+        if(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(s)) return s;
+
+        // pt-PT locale string -> normalize to ISO-ish
+        const pt = _ptLocaleToDateTime(s);
+        if(pt) return pt;
+
+        // Time-only -> combine with dateClean
+        if(/^\d{2}:\d{2}(:\d{2})?$/.test(s)){
+            const t = (s.length === 5) ? (s + ":00") : s;
+            return _dtKey(dateCleanFallback || _nowDateClean(), t);
+        }
+
+        // Fallback: return as-is
+        return s;
+    }
+function _parseIds(raw) {
         return raw.split(/[\s,]+/).map(function(x){ return x.trim(); }).filter(function(x){ return x !== ""; });
     }
 
@@ -1048,7 +1097,12 @@ function handleScan(v, mode) {
                     summary.expectedContent = _fmt(od.content);
                 }
 
-                var createdDT = _dtKey(b.dateClean, b.createdAt || "00:00");
+                var createdDT = "";
+                if (b.createdDateClean && b.createdTime) {
+                    createdDT = _dtKey(b.createdDateClean, b.createdTime);
+                } else {
+                    createdDT = _normalizeDT(b.createdAt, b.dateClean) || _dtKey(b.dateClean, "00:00:00");
+                }
                 if (_passesDate(createdDT, start, end) && _passesType("OFFICE / BATCH_CREATED", filters.type)) {
                     events.push({
                         DateTime: createdDT,
@@ -1064,7 +1118,10 @@ function handleScan(v, mode) {
 
                 if(b.cancelled_ids && b.cancelled_ids[sid]) {
                     var c = b.cancelled_ids[sid];
-                    var cancelDT = _fmt(c.time);
+                    var cancelDT = "";
+                    if (c.DateTime) cancelDT = _normalizeDT(c.DateTime, c.dateClean || b.dateClean);
+                    else if (c.dateClean && c.time) cancelDT = _dtKey(c.dateClean, c.time);
+                    else cancelDT = _normalizeDT(c.time, c.dateClean || b.dateClean);
                     if (_passesDate(cancelDT, start, end) && _passesType("CANCELLED", filters.type)) {
                         events.push({
                             DateTime: cancelDT,
@@ -1080,7 +1137,7 @@ function handleScan(v, mode) {
                     summary.status = "CANCELLED";
                     summary.cancelReason = _fmt(c.reason);
                     summary.cancelBy = _fmt(c.user);
-                    summary.cancelAt = _fmt(c.time);
+                    summary.cancelAt = _fmt(cancelDT);
                 }
             });
 
@@ -1161,7 +1218,18 @@ function handleScan(v, mode) {
         });
     }
 
-    function logBatchAction(bId, msg) { db.ref(`active_batches/${bId}/history`).push({ time: new Date().toLocaleString('pt-PT'), user: currentUser.email.split('@')[0].toUpperCase(), msg }); }
+    function logBatchAction(bId, msg) {
+        const dc = _nowDateClean();
+        const tm = _nowTime();
+        db.ref(`active_batches/${bId}/history`).push({
+            dateClean: dc,
+            time: tm,
+            DateTime: _dtKey(dc, tm),
+            ts: Date.now(),
+            user: currentUser.email.split('@')[0].toUpperCase(),
+            msg
+        });
+    }
 
     function openEditModal(batchId, readOnly = false) {
         if(!batchId) return;
@@ -1202,9 +1270,9 @@ function handleScan(v, mode) {
             });
 idsList.innerHTML = html + '</tbody></table>';
             const logBox = document.getElementById('qty-modification-log'); logBox.innerHTML = "";
-            if(b.history) { Object.values(b.history).reverse().forEach(log => { logBox.innerHTML += `<div style="border-bottom:1px solid #eee; padding:4px;"><b>[${log.time}] ${log.user}:</b> ${log.msg}</div>`; }); }
+            if(b.history) { Object.values(b.history).reverse().forEach(log => { logBox.innerHTML += `<div style="border-bottom:1px solid #eee; padding:4px;"><b>[${(log.DateTime || (log.dateClean && log.time ? _dtKey(log.dateClean, log.time) : log.time))}] ${log.user}:</b> ${log.msg}</div>`; }); }
             const cancelBox = document.getElementById('cancelled-ids-log'); cancelBox.innerHTML = "";
-            if(b.cancelled_ids) { Object.values(b.cancelled_ids).reverse().forEach(c => { cancelBox.innerHTML += `<div><b>ID ${c.id}:</b> ${c.reason} <br><small>By ${c.user} at ${c.time}</small></div>`; }); }
+            if(b.cancelled_ids) { Object.values(b.cancelled_ids).reverse().forEach(c => { cancelBox.innerHTML += `<div><b>ID ${c.id}:</b> ${c.reason} <br><small>By ${c.user} at ${ (c.DateTime || (c.dateClean && c.time ? (_dtKey(c.dateClean, c.time)) : c.time) ) }</small></div>`; }); }
             document.getElementById('edit-batch-modal').style.display = 'flex';
         });
     }
@@ -1397,7 +1465,9 @@ function updateDashboardStats(all, fD) {
         });
 
         const createdBy = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "SYSTEM";
-        const createdAt = new Date().toLocaleString('pt-PT');
+        const createdDateClean = _nowDateClean();
+        const createdTime = _nowTime();
+        const createdAt = _dtKey(createdDateClean, createdTime);
 
         db.ref('active_batches/'+key).set({
             name: n,
@@ -1408,7 +1478,9 @@ function updateDashboardStats(all, fD) {
             status:'PENDING_PICK',
             dateClean: tD,
             createdBy: createdBy,
-            createdAt: createdAt
+            createdAt: createdAt,
+            createdDateClean: createdDateClean,
+            createdTime: createdTime
         }).then(() => {
             alert("Created!");
             document.getElementById('off-batch-name').value="";
@@ -1417,12 +1489,168 @@ function updateDashboardStats(all, fD) {
         });
     }
 
-function handlePrePack(v) { const key = safeKey(v); const prodName = masterProductsDB[key] || "UNKNOWN SKU"; db.ref('pre_packing').push({ product: prodName, user: currentUser.email.split('@')[0].toUpperCase(), time: new Date().toLocaleTimeString('pt-PT'), dateClean: new Date().toISOString().split('T')[0] }).then(() => { resetScan(); loadPrePackHistory(); }); }
-    function loadRecentReturns() { db.ref('registos').limitToLast(10).on('value', snap => { const tbody = document.querySelector('#recent-returns-table tbody'); tbody.innerHTML = ""; const data = snap.val(); if(!data) return; Object.keys(data).reverse().forEach(k => { const r = data[k]; if(r.mode === 'RETURN') tbody.innerHTML += `<tr><td>${r.time}</td><td><b>${r.id}</b></td><td>${r.prods}</td><td><button class="btn-small btn-delete" onclick="db.ref('registos/${k}').remove()">X</button></td></tr>`; }); }); }
-    function loadPrePackHistory() { const fD = new Date().toISOString().split('T')[0]; db.ref('pre_packing').on('value', snap => { const tbody = document.querySelector('#prepack-recent-table tbody'); tbody.innerHTML = ""; if(!snap.val()) return; Object.keys(snap.val()).reverse().forEach(k => { const r = snap.val()[k]; if(r.dateClean === fD) tbody.innerHTML += `<tr><td>${r.time}</td><td>${r.product}</td><td><button class="btn-small btn-delete" onclick="db.ref('pre_packing/${k}').remove()">X</button></td></tr>`; }); }); }
-    function updateDisplay(m) { const p = (m === 'RETURN' ? 'rv-' : 'v-'); document.getElementById(p+'id').innerText = scanData.id||"-"; document.getElementById(p+'track').innerText = scanData.track||"-"; const container = document.getElementById(p+'prods'); container.innerHTML = ""; scanData.prods.forEach(name => { container.innerHTML += `<div class="prod-tag"><span>${name}</span></div>`; }); }
+    // --- PRE-PACKING + RECENT RETURNS (uniform date/time + no locale strings) ---
+    function handlePrePack(v) {
+        const raw = (v || "").toString().trim();
+        if (!raw) return;
 
-    document.getElementById('main-input').addEventListener('keypress', e => { if(e.key==='Enter'){ handleScan(e.target.value.trim()); e.target.value=""; } });
+        const code = safeKey(raw);
+        const dc = _nowDateClean();
+        const tm = _nowTime();
+        const user = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN";
+
+        // Try resolve product name from master DB (keep graceful fallbacks)
+        const mp = masterProductsDB ? (masterProductsDB[code] || masterProductsDB[raw] || null) : null;
+        const prodName = (mp && typeof mp === 'object')
+            ? (mp.name || mp.product || mp.title || mp.ref || raw)
+            : (typeof mp === 'string' ? mp : raw);
+
+        const payload = {
+            code: code,
+            product: prodName,
+            user: user,
+            dateClean: dc,
+            time: tm,
+            DateTime: _dtKey(dc, tm),
+            ts: Date.now()
+        };
+
+        db.ref('pre_packing').push(payload).then(() => {
+            resetScan && resetScan();
+            loadPrePackHistory && loadPrePackHistory();
+        }).catch(err => {
+            console.error(err);
+            alert("Erro ao gravar pre-packing.");
+        });
+    }
+
+    function loadRecentReturns() {
+        const tbody = document.querySelector('#recent-returns-table tbody');
+        if (!tbody) return;
+        const today = _nowDateClean();
+
+        db.ref('registos').limitToLast(500).on('value', snap => {
+            const rows = [];
+            snap.forEach(ch => {
+                const k = ch.key;
+                const r = ch.val() || {};
+                const mode = (r.mode || r.Type || "").toString().toUpperCase();
+                const dc = r.dateClean || "";
+                if (dc !== today) return;
+                if (mode !== "RETURN" && mode !== "RETURNS") return;
+
+                const tm = r.endTime || r.time || "";
+                const dt = r.DateTime || _dtKey(dc, tm);
+                const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
+
+                const user = r.user || "";
+                const id = r.id || r.orderId || r.order || r.track || "";
+                const items = r.prods || r.items || r.products || r.content || "";
+
+                rows.push({ k, tm, user, id, items, ts, dt });
+            });
+
+            rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
+
+            tbody.innerHTML = "";
+            rows.forEach(r => {
+                tbody.innerHTML += `
+<tr>
+  <td>${_fmt(r.tm)}</td>
+  <td>${_fmt(r.user)}</td>
+  <td>${_fmt(r.id)}</td>
+  <td>${_fmt(r.items)}</td>
+  <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
+</tr>`;
+            });
+        });
+    }
+
+    function loadPrePackHistory() {
+        const tbody = document.querySelector('#prepack-recent-table tbody');
+        if (!tbody) return;
+        const today = _nowDateClean();
+
+        db.ref('pre_packing').limitToLast(800).on('value', snap => {
+            const rows = [];
+            snap.forEach(ch => {
+                const k = ch.key;
+                const p = ch.val() || {};
+                if ((p.dateClean || "") !== today) return;
+
+                const tm = p.time || "";
+                const dt = p.DateTime || _dtKey(p.dateClean, tm);
+                const ts = p.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
+
+                rows.push({
+                    k,
+                    tm,
+                    user: p.user || "",
+                    product: p.product || p.code || "",
+                    ts,
+                    dt
+                });
+            });
+
+            rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
+
+            tbody.innerHTML = "";
+            rows.forEach(r => {
+                tbody.innerHTML += `
+<tr>
+  <td>${_fmt(r.tm)}</td>
+  <td>${_fmt(r.user)}</td>
+  <td>${_fmt(r.product)}</td>
+  <td><button class="btn-small btn-delete" onclick="db.ref('pre_packing/${r.k}').remove()">X</button></td>
+</tr>`;
+            });
+        });
+    }
+
+    function updateDisplay(m) {
+        // Update top labels for PACKING UI
+        const idEl = document.getElementById('v-id');
+        const trEl = document.getElementById('v-track');
+
+        if (idEl) idEl.textContent = scanData.id || "-";
+        if (trEl) trEl.textContent = scanData.track || "-";
+
+        // Render scanned products (always show in v-prods)
+        const prodsEl = document.getElementById('v-prods');
+        const list = Array.isArray(scanData.prods) ? scanData.prods : [];
+        if (prodsEl) {
+            prodsEl.innerHTML = "";
+            list.forEach(name => {
+                prodsEl.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
+            });
+        }
+
+        // IMPORTANT:
+        // In PACKING, #meta-inv-content is "EXPECTED CONTENT" (from batch order_details).
+        // Do NOT overwrite it with scanned products.
+        if ((m || currentMode) !== 'PACKING') {
+            // For returns/prepack contexts (if the element exists on screen), show the scanned items list.
+            const metaEl = document.getElementById('meta-inv-content');
+            if (metaEl) metaEl.textContent = list.length ? list.join(", ") : "-";
+        }
+
+        // Returns UI (rv-*)
+        const rvId = document.getElementById('rv-id');
+        const rvTr = document.getElementById('rv-track');
+        const rvProds = document.getElementById('rv-prods');
+        if ((m || currentMode) === 'RETURN' || (m || currentMode) === 'RETURNS') {
+            if (rvId) rvId.textContent = scanData.id || "-";
+            if (rvTr) rvTr.textContent = scanData.track || "-";
+            if (rvProds) {
+                rvProds.innerHTML = "";
+                list.forEach(name => {
+                    rvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
+                });
+            }
+        }
+    }
+
+    document.getElementById('main-input').addEventListener('keypress', e => { if(e.key==='Enter'){ handleScan(e.target.value.trim()); e.target.value=""; } });('keypress', e => { if(e.key==='Enter'){ handleScan(e.target.value.trim()); e.target.value=""; } });
 
 
     // --- FIX: CANCEL BUTTON IN EDIT BATCH MODAL ---
@@ -1435,7 +1663,10 @@ function handlePrePack(v) { const key = safeKey(v); const prodName = masterProdu
                 id: orderId,
                 reason: reason.trim(),
                 user: (currentUser && currentUser.email ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN"),
-            time: new Date().toLocaleString('pt-PT')
+            dateClean: _nowDateClean(),
+            time: _nowTime(),
+            DateTime: _nowDateTime(),
+            ts: Date.now()
             };
 
             // Store cancellation info
