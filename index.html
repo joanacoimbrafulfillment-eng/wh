@@ -391,14 +391,14 @@
             </div>
             <div class="card">
                 <h3>Recent Returns</h3>
-                <div class="scroll-area"><table id="recent-returns-table"><thead><tr><th>Time</th><th>ID</th><th>Items</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+                <div class="scroll-area"><table id="recent-returns-table"><thead><tr><th>Time</th><th>User</th><th>ID</th><th>Items</th><th>Action</th></tr></thead><tbody></tbody></table></div>
             </div>
         </div>
 
         <!-- OTHERS -->
         <div id="sec-prepack" class="section">
             <div class="card" style="text-align:center;"><h2>📦 PRE-PACKING</h2><input type="text" id="prepack-input" placeholder="SCAN..." style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--color-prepack); border-radius:15px;" onkeypress="if(event.key==='Enter'){handlePrePack(this.value); this.value='';}"></div>
-            <div class="card"><h3>Today's Pre-Packings</h3><div class="scroll-area"><table id="prepack-recent-table"><thead><tr><th>Time</th><th>Product</th><th>Action</th></tr></thead><tbody></tbody></table></div></div>
+            <div class="card"><h3>Today's Pre-Packings</h3><div class="scroll-area"><table id="prepack-recent-table"><thead><tr><th>Time</th><th>User</th><th>Product</th><th>Action</th></tr></thead><tbody></tbody></table></div></div>
         </div>
         <div id="sec-masterdata" class="section">
             <div class="card"><h2>📋 Master Product Database</h2><div class="grid-2"><input type="file" id="csv-file-input" accept=".csv"><button class="btn-submit" onclick="handleCSVUpload()">UPLOAD CSV</button></div><hr><input type="text" id="master-search" placeholder="Search..." onkeyup="updateMasterPreview()"><div class="scroll-area"><table id="master-db-table"><thead><tr><th>Barcode</th><th>Product Name</th></tr></thead><tbody></tbody></table></div></div>
@@ -426,6 +426,21 @@
     let currentUser = null, scanData = { id: "", track: "", prods: [], startTime: "", endTime: "" };
     let isAdminUser = false;
     let masterProductsDB = {}, currentMode = "PACKING", activeBatchData = null, activeBatchPath = null;
+
+    // --- PERF: shared listener state (avoid duplicated .on listeners) ---
+    let __cfgBound = false;
+    let __overviewBatchesRef = null, __overviewBatchesCb = null;
+    let __overviewPrepackRef = null, __overviewPrepackCb = null;
+    let __overviewCacheBatches = {};
+    let __overviewCachePrepackCount = 0;
+
+    let __prepackTodayRef = null, __prepackTodayCb = null;
+    let __returnsTodayRef = null, __returnsTodayCb = null;
+
+    let __processedRegRef = null, __processedRegCb = null;
+
+    let __modalBatchRef = null, __modalBatchCb = null;
+
 
     function safeKey(str) { if(!str) return "UNKNOWN"; return str.toString().replace(/[.#$/[\]]/g, "_").trim().toUpperCase(); }
 
@@ -1233,7 +1248,10 @@ function _parseIds(raw) {
 
     function openEditModal(batchId, readOnly = false) {
         if(!batchId) return;
-        db.ref('active_batches/'+batchId).on('value', snap => {
+        // Keep only one modal listener at a time
+        if(__modalBatchRef && __modalBatchCb){ __modalBatchRef.off('value', __modalBatchCb); }
+        __modalBatchRef = db.ref('active_batches/'+batchId);
+        __modalBatchCb = (snap) => {
             const b = snap.val(); if(!b) return;
             document.getElementById('edit-batch-title').innerText = b.name;
             document.getElementById('modal-delete-btn').style.display = (readOnly || !currentUser.email.endsWith('@admin.com')) ? 'none' : 'block';
@@ -1274,7 +1292,8 @@ idsList.innerHTML = html + '</tbody></table>';
             const cancelBox = document.getElementById('cancelled-ids-log'); cancelBox.innerHTML = "";
             if(b.cancelled_ids) { Object.values(b.cancelled_ids).reverse().forEach(c => { cancelBox.innerHTML += `<div><b>ID ${c.id}:</b> ${c.reason} <br><small>By ${c.user} at ${ (c.DateTime || (c.dateClean && c.time ? (_dtKey(c.dateClean, c.time)) : c.time) ) }</small></div>`; }); }
             document.getElementById('edit-batch-modal').style.display = 'flex';
-        });
+        };
+        __modalBatchRef.on('value', __modalBatchCb);
     }
 
     function loadBatchData(bId) {
@@ -1289,17 +1308,41 @@ idsList.innerHTML = html + '</tbody></table>';
     }
 
     function updateProcessedTable(bId) {
-        db.ref('registos').on('value', snap => {
-            const tbody = document.querySelector('#recent-scans-table tbody'); tbody.innerHTML = "";
-            const data = snap.val(); if(!data) return;
-            Object.keys(data).reverse().forEach(key => {
-                const r = data[key];
-                if(r.batch === bId) {
-                    const det = (activeBatchData && activeBatchData.order_details && activeBatchData.order_details[r.id]) ? activeBatchData.order_details[r.id] : {name:"---"};
-                    tbody.innerHTML += `<tr><td>${r.time}</td><td><b>${r.id}</b></td><td>${det.name}</td><td><button class="btn-small btn-delete" onclick="removeRecentScan('${key}', '${r.id}', '${r.prods}', '${bId}')">X</button></td></tr>`;
-                }
+        // Listen only to records for this batch (avoid pulling ALL registos)
+        if(__processedRegRef && __processedRegCb){ __processedRegRef.off('value', __processedRegCb); }
+
+        __processedRegRef = db.ref('registos').orderByChild('batch').equalTo(bId).limitToLast(5000);
+        __processedRegCb = (snap) => {
+            const tbody = document.querySelector('#recent-scans-table tbody');
+            if(!tbody) return;
+            tbody.innerHTML = "";
+
+            const rows = [];
+            snap.forEach(ch => {
+                const key = ch.key;
+                const r = ch.val() || {};
+                if(!r || r.batch !== bId) return;
+                if((r.mode || "").toString().toUpperCase() !== 'PACKING') return;
+                rows.push({ key, r });
             });
-        });
+
+            // newest first by DateTime/ts
+            rows.sort((a,b) => {
+                const ra=a.r||{}, rb=b.r||{};
+                const dta = (ra.DateTime || _dtKey(ra.dateClean||"", ra.endTime||ra.time||""));
+                const dtb = (rb.DateTime || _dtKey(rb.dateClean||"", rb.endTime||rb.time||""));
+                return _fmt(dtb).localeCompare(_fmt(dta));
+            });
+
+            rows.forEach(({key, r}) => {
+                const det = (activeBatchData && activeBatchData.order_details && activeBatchData.order_details[r.id])
+                    ? activeBatchData.order_details[r.id]
+                    : {name:"---"};
+                tbody.innerHTML += `<tr><td>${_fmt(r.time)}</td><td><b>${_fmt(r.id)}</b></td><td>${_fmt(det.name)}</td><td><button class="btn-small btn-delete" onclick="removeRecentScan('${key}', '${_fmt(r.id)}', '${_fmt(r.prods)}', '${bId}')">X</button></td></tr>`;
+            });
+        };
+
+        __processedRegRef.on('value', __processedRegCb);
     }
 
     function removeRecentScan(recId, orderId, itemsStr, bId) { if(!confirm(`Apagar registo do ID ${orderId}?`)) return; db.ref('registos/' + recId).remove().then(() => { if(bId) db.ref(`active_batches/${bId}/processed_ids/${orderId}`).remove(); }); }
@@ -1363,20 +1406,84 @@ Missing: ${sample}${more}`);
         }
     }
 
-    function syncGlobalData() {
-        const fD = document.getElementById('global-date-filter').value;
-        db.ref('active_batches').on('value', snap => {
-            const bts = snap.val() || {}; 
-            updateDashboardStats(bts, fD);
-            updatePickingMiniDashboard(bts, fD);
-            renderManagementUI(bts, fD);
-            updateSelects(bts, fD);
-        });
+    function __stopOverviewRealtime(){
+        if(__overviewBatchesRef && __overviewBatchesCb){ __overviewBatchesRef.off('value', __overviewBatchesCb); }
+        if(__overviewPrepackRef && __overviewPrepackCb){ __overviewPrepackRef.off('value', __overviewPrepackCb); }
+        __overviewBatchesRef = null; __overviewBatchesCb = null;
+        __overviewPrepackRef = null; __overviewPrepackCb = null;
+    }
+
+    function __renderOverviewForDate(fD){
+        const bts = __overviewCacheBatches || {};
+        updateDashboardStats(bts, fD, __overviewCachePrepackCount);
+        updatePickingMiniDashboard(bts, fD);
+        renderManagementUI(bts, fD);
+        updateSelects(bts, fD);
+    }
+
+    function __bindConfigListenersOnce(){
+        if(__cfgBound) return;
+        __cfgBound = true;
+
+        // Small config nodes can stay realtime (low traffic)
         db.ref('config/master_products').on('value', s => { masterProductsDB = s.val() || {}; });
-        db.ref('config/carriers').on('value', s => { 
+        db.ref('config/carriers').on('value', s => {
             const carriers = s.val() || ["CTT", "NACEX", "CORREOS"]; 
-            const sel = document.getElementById('off-carrier-select'); if(sel) { sel.innerHTML = ""; carriers.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`); }
+            const sel = document.getElementById('off-carrier-select');
+            if(sel) {
+                sel.innerHTML = "";
+                carriers.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+            }
         });
+    }
+
+    async function syncGlobalData() {
+        __bindConfigListenersOnce();
+
+        const fD = document.getElementById('global-date-filter').value;
+        const today = _nowDateClean();
+
+        // Realtime only when viewing TODAY
+        if(fD === today) {
+            // Active batches realtime
+            if(!__overviewBatchesRef) {
+                __overviewBatchesRef = db.ref('active_batches');
+                __overviewBatchesCb = (snap) => {
+                    __overviewCacheBatches = snap.val() || {};
+                    __renderOverviewForDate(fD);
+                };
+                __overviewBatchesRef.on('value', __overviewBatchesCb);
+            }
+
+            // Pre-pack count realtime only for today
+            if(!__overviewPrepackRef) {
+                __overviewPrepackRef = db.ref('pre_packing').orderByChild('dateClean').equalTo(today);
+                __overviewPrepackCb = (snap) => {
+                    __overviewCachePrepackCount = snap.numChildren() || 0;
+                    __renderOverviewForDate(fD);
+                };
+                __overviewPrepackRef.on('value', __overviewPrepackCb);
+            }
+
+            // Render immediately using whatever cache we have
+            __renderOverviewForDate(fD);
+            return;
+        }
+
+        // Older dates: no realtime listeners; load only on demand
+        __stopOverviewRealtime();
+
+        try {
+            const [bSnap, pSnap] = await Promise.all([
+                db.ref('active_batches').once('value'),
+                db.ref('pre_packing').orderByChild('dateClean').equalTo(fD).once('value')
+            ]);
+            __overviewCacheBatches = bSnap.val() || {};
+            __overviewCachePrepackCount = pSnap.numChildren() || 0;
+            __renderOverviewForDate(fD);
+        } catch(e) {
+            console.error(e);
+        }
     }
 
     function showMetadata(id) {
@@ -1391,8 +1498,16 @@ Missing: ${sample}${more}`);
     }
 
     function deleteBatch(id) { if(confirm("Apagar lote?")) db.ref('active_batches/'+id).remove(); }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        if(el) el.style.display = 'none';
+        if(id === 'edit-batch-modal' && __modalBatchRef && __modalBatchCb){
+            __modalBatchRef.off('value', __modalBatchCb);
+            __modalBatchRef = null;
+            __modalBatchCb = null;
+        }
+    }
+
     function updatePickingMiniDashboard(all, fD){
         try{
             let batches = 0, ids = 0, products = 0;
@@ -1421,10 +1536,26 @@ Missing: ${sample}${more}`);
         }
     }
 
-function updateDashboardStats(all, fD) { 
-        let nP = 0, nR = 0, nK = 0; for(let k in all) { let b = all[k]; if(b.dateClean === fD) { const requiredIds = getRequiredBatchIds(b);
-            const nI = requiredIds.length, nE = requiredIds.filter(id => (b.processed_ids && b.processed_ids[id])).length; nP+=nI; nK+=nE; if(b.status==='READY_TO_PACK') nR+=(nI - nE); } } 
-        document.getElementById('card-printed').innerText = nP; document.getElementById('card-ready').innerText = nR; document.getElementById('card-packed').innerText = nK; 
+function updateDashboardStats(all, fD, prepackCount) { 
+        let nP = 0, nR = 0, nK = 0;
+        for(let k in all) {
+            let b = all[k];
+            if(!b || b.dateClean !== fD) continue;
+            const requiredIds = getRequiredBatchIds(b);
+            const nI = requiredIds.length;
+            const nE = requiredIds.filter(id => (b.processed_ids && b.processed_ids[id])).length;
+            nP += nI;
+            nK += nE;
+            if(b.status === 'READY_TO_PACK') nR += (nI - nE);
+        }
+        const elP = document.getElementById('card-printed');
+        const elR = document.getElementById('card-ready');
+        const elK = document.getElementById('card-packed');
+        const elPre = document.getElementById('card-prepack');
+        if(elP) elP.innerText = nP;
+        if(elR) elR.innerText = nR;
+        if(elK) elK.innerText = nK;
+        if(elPre) elPre.innerText = String(prepackCount || 0);
     }
     function updateSelects(bts, fD) {
         const selWH = document.getElementById('wh-batch-select'), selPK = document.getElementById('pick-batch-select');
@@ -1517,7 +1648,6 @@ function updateDashboardStats(all, fD) {
 
         db.ref('pre_packing').push(payload).then(() => {
             resetScan && resetScan();
-            loadPrePackHistory && loadPrePackHistory();
         }).catch(err => {
             console.error(err);
             alert("Erro ao gravar pre-packing.");
@@ -1528,83 +1658,91 @@ function updateDashboardStats(all, fD) {
         const tbody = document.querySelector('#recent-returns-table tbody');
         if (!tbody) return;
         const today = _nowDateClean();
+        const u = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN";
 
-        db.ref('registos').limitToLast(500).on('value', snap => {
+        // Avoid duplicate listeners when re-entering tab
+        if(__returnsTodayRef && __returnsTodayCb){ __returnsTodayRef.off('value', __returnsTodayCb); }
+
+        // Only THIS USER (mobile-friendly). We filter by dateClean client-side to avoid compound-index needs.
+        __returnsTodayRef = db.ref('registos').orderByChild('user').equalTo(u).limitToLast(400);
+        __returnsTodayCb = (snap) => {
             const rows = [];
             snap.forEach(ch => {
                 const k = ch.key;
                 const r = ch.val() || {};
                 const mode = (r.mode || r.Type || "").toString().toUpperCase();
-                const dc = r.dateClean || "";
-                if (dc !== today) return;
                 if (mode !== "RETURN" && mode !== "RETURNS") return;
 
+                // Only the selected day (today) on this realtime view
+                if ((r.dateClean || "") !== today) return;
+
+                // Extra guard (should be redundant with query)
+                if (((r.user || "").toString().toUpperCase()) !== u) return;
+
+                const dc = r.dateClean || "";
                 const tm = r.endTime || r.time || "";
                 const dt = r.DateTime || _dtKey(dc, tm);
                 const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
 
-                const user = r.user || "";
-                const id = r.id || r.orderId || r.order || r.track || "";
-                const items = r.prods || r.items || r.products || r.content || "";
-
-                rows.push({ k, tm, user, id, items, ts, dt });
+                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", ts, dt });
             });
 
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
 
-            tbody.innerHTML = "";
-            rows.forEach(r => {
-                tbody.innerHTML += `
+            tbody.innerHTML = rows.map(r => `
 <tr>
   <td>${_fmt(r.tm)}</td>
   <td>${_fmt(r.user)}</td>
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
   <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
-</tr>`;
-            });
-        });
+</tr>`).join('');
+        };
+
+        __returnsTodayRef.on('value', __returnsTodayCb);
     }
 
     function loadPrePackHistory() {
         const tbody = document.querySelector('#prepack-recent-table tbody');
         if (!tbody) return;
         const today = _nowDateClean();
+        const u = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN";
 
-        db.ref('pre_packing').limitToLast(800).on('value', snap => {
+        if(__prepackTodayRef && __prepackTodayCb){ __prepackTodayRef.off('value', __prepackTodayCb); }
+
+        // Only THIS USER (mobile-friendly). We filter by dateClean client-side to avoid compound-index needs.
+        __prepackTodayRef = db.ref('pre_packing').orderByChild('user').equalTo(u).limitToLast(400);
+        __prepackTodayCb = (snap) => {
             const rows = [];
             snap.forEach(ch => {
                 const k = ch.key;
                 const p = ch.val() || {};
+
+                // Only the selected day (today) on this realtime view
                 if ((p.dateClean || "") !== today) return;
 
+                // Extra guard (should be redundant with query)
+                if (((p.user || "").toString().toUpperCase()) !== u) return;
+
                 const tm = p.time || "";
-                const dt = p.DateTime || _dtKey(p.dateClean, tm);
+                const dt = p.DateTime || _dtKey(p.dateClean || today, tm);
                 const ts = p.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
 
-                rows.push({
-                    k,
-                    tm,
-                    user: p.user || "",
-                    product: p.product || p.code || "",
-                    ts,
-                    dt
-                });
+                rows.push({ k, tm, user: p.user || "", product: p.product || p.code || "", ts, dt });
             });
 
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
 
-            tbody.innerHTML = "";
-            rows.forEach(r => {
-                tbody.innerHTML += `
+            tbody.innerHTML = rows.map(r => `
 <tr>
   <td>${_fmt(r.tm)}</td>
   <td>${_fmt(r.user)}</td>
   <td>${_fmt(r.product)}</td>
   <td><button class="btn-small btn-delete" onclick="db.ref('pre_packing/${r.k}').remove()">X</button></td>
-</tr>`;
-            });
-        });
+</tr>`).join('');
+        };
+
+        __prepackTodayRef.on('value', __prepackTodayCb);
     }
 
     function updateDisplay(m) {
@@ -1650,7 +1788,17 @@ function updateDashboardStats(all, fD) {
         }
     }
 
-    document.getElementById('main-input').addEventListener('keypress', e => { if(e.key==='Enter'){ handleScan(e.target.value.trim()); e.target.value=""; } });('keypress', e => { if(e.key==='Enter'){ handleScan(e.target.value.trim()); e.target.value=""; } });
+    (function(){
+  const __inp = document.getElementById('main-input');
+  if(__inp){
+    __inp.addEventListener('keypress', e => {
+      if(e.key==='Enter'){
+        handleScan(e.target.value.trim());
+        e.target.value='';
+      }
+    });
+  }
+})();
 
 
     // --- FIX: CANCEL BUTTON IN EDIT BATCH MODAL ---
