@@ -317,6 +317,11 @@
             <div class="card">
                 <h2>🧺 Picking Phase</h2>
 
+                <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:10px;">
+                    <div style="font-weight:900; font-size:12px; color:#666; text-transform:uppercase;">Data</div>
+                    <input type="date" id="pick-date-filter" style="width:220px;" onchange="setPickingDate(this.value)">
+                </div>
+
                 <div class="grid-3" style="margin-top:12px;">
                     <div class="card" style="margin:0; padding:14px;">
                         <div style="font-size:12px; color:#666; font-weight:900;">Lotes por recolher</div>
@@ -347,6 +352,12 @@
             <div class="grid-2">
                 <div class="card">
                     <h3>1. Select Active Batch</h3>
+                    
+                    <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:10px;">
+                        <div style="font-weight:900; font-size:12px; color:#666; text-transform:uppercase;">Data</div>
+                        <input type="date" id="pack-date-filter" style="width:220px;" onchange="setPackingDate(this.value)">
+                    </div>
+
                     <select id="wh-batch-select" onchange="loadBatchData(this.value)" style="height:70px; font-weight:bold; font-size:22px; border: 3px solid var(--primary);"></select>
                 </div>
                 <div class="card">
@@ -527,8 +538,24 @@ document.addEventListener('click', (e) => {
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         if(el) el.classList.add('active');
+
+        // keep PICKING date selector in sync with the global date filter
+        if(id === 'sec-picking') {
+            try {
+                const gd = document.getElementById('global-date-filter');
+                const pk = document.getElementById('pick-date-filter');
+                if(gd && pk && gd.value && pk.value !== gd.value) pk.value = gd.value;
+            } catch(e) {}
+        }
         
         if(id === 'sec-warehouse') {
+            // keep PACKING date selector in sync with the global date filter
+            try {
+                const gd = document.getElementById('global-date-filter');
+                const pa = document.getElementById('pack-date-filter');
+                if(gd && pa && gd.value && pa.value !== gd.value) pa.value = gd.value;
+            } catch(e) {}
+
             const saved = localStorage.getItem('lastPackingBatch');
             if(saved) { setTimeout(() => { const sel = document.getElementById('wh-batch-select'); if(sel && sel.querySelector(`option[value="${saved}"]`)) { sel.value = saved; loadBatchData(saved); } }, 300); }
         }
@@ -668,37 +695,61 @@ function handleScan(v, mode) {
         updateDisplay(m);
         if(scanData.id && scanData.track) document.getElementById('btn-confirm-order').style.display = 'block';
     }
-
     async function confirmOrder(mode) {
         const m = mode || currentMode;
         const bId = document.getElementById('wh-batch-select').value;
         if(!scanData.id || !scanData.track) return alert("Faltam dados!");
 
-        const dc = _nowDateClean();
-
+        // Work day: the real day the operator is performing the action
+        const workDc = _nowDateClean();
         const endTime = _nowTime();
+
+        // Business day: the day of the batch (shipping day) for PACKING
+        let dc = workDc;
 
         try {
             if(m === 'PACKING' && bId) {
+                // Make sure PACKING records are stored under the batch date (shipping day)
+                let batchDc = (activeBatchData && activeBatchData.dateClean) ||
+                              (__overviewCacheBatches && __overviewCacheBatches[bId] && __overviewCacheBatches[bId].dateClean) ||
+                              '';
+
+                if(!batchDc) {
+                    const dSnap = await db.ref(`active_batches/${bId}/dateClean`).once('value');
+                    batchDc = dSnap.val() || '';
+                }
+                if(batchDc) dc = batchDc;
+
                 await db.ref(`active_batches/${bId}/processed_ids/${scanData.id}`).set(true);
                 logBatchAction(bId, `PACKED ID: ${scanData.id}`);
             }
-            await db.ref('registos').push({ 
-                id: scanData.id, 
-                track: scanData.track, 
-                prods: scanData.prods.join(' | ') || "No Items", 
-                mode: m, 
-                batch: bId || "GENERAL", 
-                user: currentUser.email.split('@')[0].toUpperCase(), 
+
+            await db.ref('registos').push({
+                id: scanData.id,
+                track: scanData.track,
+                prods: scanData.prods.join(' | ') || 'No Items',
+                mode: m,
+                batch: bId || 'GENERAL',
+                user: currentUser.email.split('@')[0].toUpperCase(),
                 startTime: scanData.startTime || endTime,
                 endTime: endTime,
                 time: endTime, // Main sorting time
+
+                // Date used for totals / exports (shipping day in PACKING)
                 dateClean: dc,
                 DateTime: _dtKey(dc, endTime),
-                ts: Date.now() 
+
+                // Optional: keep the real work day for productivity analytics
+                workDateClean: workDc,
+                workDateTime: _dtKey(workDc, endTime),
+
+                ts: Date.now()
             });
-            resetScan(); 
-        } catch (e) { alert("Erro ao gravar."); }
+
+            resetScan();
+        } catch (e) {
+            alert('Erro ao gravar.');
+        }
     }
 
     function resetScan() {
@@ -1437,10 +1488,33 @@ Missing: ${sample}${more}`);
         });
     }
 
+
+    // --- PICKING DATE FILTER (allows future batches, e.g., tomorrow) ---
+    function setPickingDate(d){
+        const gd = document.getElementById('global-date-filter');
+        if(gd) gd.value = d;
+        syncGlobalData();
+    }
+
+    // --- PACKING DATE FILTER (allows packing tomorrow batches, etc.) ---
+    function setPackingDate(d){
+        const gd = document.getElementById('global-date-filter');
+        if(gd) gd.value = d;
+        syncGlobalData();
+    }
+
     async function syncGlobalData() {
         __bindConfigListenersOnce();
 
         const fD = document.getElementById('global-date-filter').value;
+        try {
+            const pk = document.getElementById('pick-date-filter');
+            if(pk && pk.value !== fD) pk.value = fD;
+        } catch(e) {}
+        try {
+            const pa = document.getElementById('pack-date-filter');
+            if(pa && pa.value !== fD) pa.value = fD;
+        } catch(e) {}
         const today = _nowDateClean();
 
         // Realtime only when viewing TODAY
