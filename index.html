@@ -110,6 +110,7 @@
             <h2 id="edit-batch-title" style="font-size:30px; margin:0;">Batch Details</h2>
             <button class="btn-small btn-delete" id="modal-delete-btn" style="padding:15px 30px; font-size:16px;">DELETE ENTIRE BATCH</button>
         </div>
+        <div id="edit-batch-meta" style="margin-top:10px; font-size:14px; color:#444;"></div>
         <hr style="margin:25px 0;">
         <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:30px;">
             <div>
@@ -785,7 +786,32 @@ function handleScan(v, mode) {
         return (_fmt(dateClean) + " " + _fmt(timeStr)).trim(); // YYYY-MM-DD HH:mm:ss
     }
 
-    function _nowDateTime(){
+    
+
+    // Cache + helper to retrieve picking operator from registos when active_batches fields are not writable
+    const _pickingInfoCache = {};
+    async function getPickingInfo(batchId){
+        if(!batchId) return null;
+        if(_pickingInfoCache[batchId]) return _pickingInfoCache[batchId];
+        try{
+            const snap = await db.ref('registos').orderByChild('batch').equalTo(batchId).once('value');
+            let best = null;
+            Object.values(snap.val() || {}).forEach(r => {
+                if(r && (r.mode === "PICKING" || r.msg === "PICKING COMPLETE")){
+                    const ts = (typeof r.ts === 'number') ? r.ts : 0;
+                    if(!best || ts > (best.ts||0)) best = r;
+                }
+            });
+            if(best){
+                _pickingInfoCache[batchId] = { pickedBy: best.user, pickedAt: best.DateTime || _dtKey(best.dateClean, best.time), ts: best.ts||0 };
+                return _pickingInfoCache[batchId];
+            }
+        }catch(e){
+            console.warn("getPickingInfo failed", e);
+        }
+        return null;
+    }
+function _nowDateTime(){
         const dc = _nowDateClean();
         const tm = _nowTime();
         return _dtKey(dc, tm);
@@ -1287,7 +1313,7 @@ function _parseIds(raw) {
     function logBatchAction(bId, msg) {
         const dc = _nowDateClean();
         const tm = _nowTime();
-        db.ref(`active_batches/${bId}/history`).push({
+        return db.ref(`active_batches/${bId}/history`).push({
             dateClean: dc,
             time: tm,
             DateTime: _dtKey(dc, tm),
@@ -1305,6 +1331,27 @@ function _parseIds(raw) {
         __modalBatchCb = (snap) => {
             const b = snap.val(); if(!b) return;
             document.getElementById('edit-batch-title').innerText = b.name;
+
+const metaEl = document.getElementById('edit-batch-meta');
+if(metaEl){
+    const parts = [];
+    parts.push(`<div><b>Status:</b> ${_fmt(b.status)}</div>`);
+    if (b.carrier) parts.push(`<div><b>Carrier:</b> ${_fmt(b.carrier)}</div>`);
+    if (b.pickedBy) parts.push(`<div><b>Picked by:</b> ${_fmt(b.pickedBy)}${b.pickedAt ? ` <span style="color:#666;">@ ${_fmt(b.pickedAt)}</span>` : ''}</div>`);
+    metaEl.innerHTML = parts.join('');
+
+    if(!b.pickedBy){
+        getPickingInfo(batchId).then(info => {
+            if(info && info.pickedBy){
+                const parts2 = [];
+                parts2.push(`<div><b>Status:</b> ${_fmt(b.status)}</div>`);
+                if (b.carrier) parts2.push(`<div><b>Carrier:</b> ${_fmt(b.carrier)}</div>`);
+                parts2.push(`<div><b>Picked by:</b> ${_fmt(info.pickedBy)}${info.pickedAt ? ` <span style="color:#666;">@ ${_fmt(info.pickedAt)}</span>` : ''}</div>`);
+                metaEl.innerHTML = parts2.join('');
+            }
+        });
+    }
+}
             document.getElementById('modal-delete-btn').style.display = (readOnly || !currentUser.email.endsWith('@admin.com')) ? 'none' : 'block';
             const tbody = document.querySelector('#edit-inventory-table tbody'); tbody.innerHTML = "";
             Object.keys(b.inventory || {}).sort().forEach(k => {
@@ -1438,7 +1485,58 @@ Missing: ${sample}${more}`);
     }
 
     function selectAllPicking() { document.querySelectorAll('.pk-check').forEach(c => c.checked = true); }
-    function finishPicking() { const bId = document.getElementById('pick-batch-select').value; if(!bId) return; db.ref('active_batches/'+bId).update({status: 'READY_TO_PACK'}).then(() => location.reload()); }
+    function finishPicking() {
+    const bId = document.getElementById('pick-batch-select').value;
+    if(!bId) return;
+
+    if(!currentUser || !currentUser.email) {
+        return alert("ERRO: utilizador não autenticado.");
+    }
+
+    const pickedBy = currentUser.email.split('@')[0].toUpperCase();
+    const dc = _nowDateClean();
+    const tm = _nowTime();
+    const dt = _dtKey(dc, tm);
+
+    // Keep original behavior first: update only the status (most likely allowed by rules)
+    db.ref('active_batches/' + bId).update({ status: 'READY_TO_PACK' })
+    .then(() => {
+        // Best-effort extra writes (do not block finishing picking if rules reject them)
+        const extra = [
+            db.ref('active_batches/' + bId).update({
+                pickedBy: pickedBy,
+                pickedDateClean: dc,
+                pickedTime: tm,
+                pickedAt: dt
+            }),
+            // Local history (if permitted)
+            db.ref(`active_batches/${bId}/history`).push({
+                dateClean: dc,
+                time: tm,
+                DateTime: dt,
+                ts: Date.now(),
+                user: pickedBy,
+                msg: "PICKING COMPLETE"
+            }),
+            // Global activity log (if permitted)
+            db.ref('registos').push({
+                mode: "PICKING",
+                batch: bId,
+                user: pickedBy,
+                dateClean: dc,
+                time: tm,
+                DateTime: dt,
+                ts: Date.now()
+            })
+        ];
+        return Promise.allSettled(extra);
+    })
+    .then(() => location.reload())
+    .catch(err => {
+        console.error(err);
+        alert("Erro ao finalizar picking. Ver consola.");
+    });
+}
 
     function renderManagementUI(all, fD) {
         const container = document.getElementById('mgmt-container'); container.innerHTML = "";
@@ -1451,7 +1549,7 @@ Missing: ${sample}${more}`);
                 const requiredIds = getRequiredBatchIds(b);
                 const tot = requiredIds.length, done = requiredIds.filter(id => (b.processed_ids && b.processed_ids[id])).length;
                 const perc = tot > 0 ? Math.round((done / tot) * 100) : 0;
-                h += `<div class="batch-card"><h4>${b.name}</h4><div style="display:flex; justify-content:space-between; font-size:12px; color:#666;"><span>${perc}% Done</span><span>Status: ${b.status}</span></div><div class="progress-container"><div class="progress-bar" style="width:${perc}%"></div></div><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn-small" style="background:var(--accent); flex:1;" onclick="openEditModal('${b.id}', false)">EDIT</button><button class="btn-small btn-delete" onclick="deleteBatch('${b.id}')">DEL</button></div></div>`;
+                h += `<div class="batch-card"><h4>${b.name}</h4><div style="display:flex; justify-content:space-between; font-size:12px; color:#666;"><span>${perc}% Done</span><span>Status: ${b.status}</span></div>${b.pickedBy ? '<div style="margin-top:6px; font-size:12px; color:#444;"><b>Picked by:</b> ' + b.pickedBy + (b.pickedAt ? ' <span style="color:#666;">@ ' + b.pickedAt + '</span>' : '') + '</div>' : ''}<div class="progress-container"><div class="progress-bar" style="width:${perc}%"></div></div><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn-small" style="background:var(--accent); flex:1;" onclick="openEditModal('${b.id}', false)">EDIT</button><button class="btn-small btn-delete" onclick="deleteBatch('${b.id}')">DEL</button></div></div>`;
             });
             col.innerHTML = h; container.appendChild(col);
         }
