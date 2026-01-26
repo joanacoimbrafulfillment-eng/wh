@@ -681,6 +681,92 @@ document.addEventListener('click', (e) => {
         XLSX.utils.book_append_sheet(wb, ws, "Report");
         XLSX.writeFile(wb, `WH_Export_${type}_${start}_to_${end}.xlsx`);
     }
+
+    // ===== PACKING VALIDATION (EXPECTED CONTENT vs SCANNED) =====
+    function _normName(s){
+        return String(s || "").trim().replace(/\s+/g,' ').toUpperCase();
+    }
+
+    function parseExpectedContent(contentStr){
+        // Expected format examples:
+        // "SKU2069 AIR CURTAIN x1 | WARRANTY ES x1"
+        // "ITEM A x2; ITEM B x1"
+        const out = {};
+        const raw = String(contentStr || "").trim();
+        if(!raw) return out;
+
+        // Split by | or ; or , (with optional spaces around)
+        const parts = raw.split(/\s*(\||;|,)\s*/).filter(x => x && x !== '|' && x !== ';' && x !== ',');
+        parts.forEach(seg => {
+            const s = String(seg || "").trim();
+            if(!s) return;
+
+            // Match "... x2" OR "... 2" (last token numeric)
+            const m = s.match(/^(.*?)(?:\s*x\s*|\s+)(\d+)\s*$/i);
+            if(!m) return;
+
+            const name = _normName(m[1]);
+            const qty  = parseInt(m[2], 10) || 0;
+            if(!name || qty <= 0) return;
+            out[name] = (out[name] || 0) + qty;
+        });
+
+        return out;
+    }
+
+    function countScannedProds(prodsArr){
+        const c = {};
+        (prodsArr || []).forEach(p => {
+            const k = _normName(p);
+            if(!k) return;
+            c[k] = (c[k] || 0) + 1;
+        });
+        return c;
+    }
+
+    function packingMeetsExpected(){
+        // If there is no expected content recorded, do NOT block (fails-open).
+        if(!activeBatchData || !activeBatchData.order_details || !scanData.id) {
+            return { ok: true, missing: [] };
+        }
+
+        const det = activeBatchData.order_details[scanData.id] || {};
+        const expected = parseExpectedContent(det.content || "");
+        const expKeys = Object.keys(expected);
+
+        if(expKeys.length === 0) {
+            return { ok: true, missing: [], expected: expected };
+        }
+
+        const scanned = countScannedProds(scanData.prods);
+
+        const missing = [];
+        expKeys.forEach(prod => {
+            const need = expected[prod];
+            const got  = scanned[prod] || 0;
+            if(got < need) missing.push(`${prod} (${got}/${need})`);
+        });
+
+        return { ok: missing.length === 0, missing: missing, expected: expected };
+    }
+
+    function refreshConfirmBtn(){
+        const btn = document.getElementById('btn-confirm-order');
+        if(!btn) return;
+
+        if(scanData.id && scanData.track){
+            if((currentMode || 'PACKING') === 'PACKING'){
+                const chk = packingMeetsExpected();
+                btn.style.display = chk.ok ? 'block' : 'none';
+            } else {
+                btn.style.display = 'block';
+            }
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+    // ============================================================
+
 function handleScan(v, mode) {
         const m = mode || currentMode;
         const key = safeKey(v);
@@ -694,14 +780,22 @@ function handleScan(v, mode) {
             scanData.track = v;
         }
         updateDisplay(m);
-        if(scanData.id && scanData.track) document.getElementById('btn-confirm-order').style.display = 'block';
+        refreshConfirmBtn();
     }
     async function confirmOrder(mode) {
         const m = mode || currentMode;
         const bId = document.getElementById('wh-batch-select').value;
         if(!scanData.id || !scanData.track) return alert("Faltam dados!");
 
-        // Work day: the real day the operator is performing the action
+        
+        // ✅ PACKING: block "ID COMPLETE" until all expected products/quantities are scanned
+        if(m === 'PACKING'){
+            const chk = packingMeetsExpected();
+            if(!chk.ok){
+                return alert("ERRO: faltam picar itens deste ID:\n- " + chk.missing.join("\n- "));
+            }
+        }
+// Work day: the real day the operator is performing the action
         const workDc = _nowDateClean();
         const endTime = _nowTime();
 
@@ -761,7 +855,8 @@ function handleScan(v, mode) {
         containers.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ""; });
         document.getElementById('packing-info-display').style.display = 'none'; 
         document.getElementById('meta-cancel-banner').style.display = 'none'; 
-        document.getElementById('btn-confirm-order').style.display = 'none'; 
+        document.getElementById('btn-confirm-order').style.display = 'none';
+        refreshConfirmBtn(); 
         const inp = document.getElementById('main-input'); if(inp) { inp.value = ""; inp.focus(); }
     }
 
@@ -1958,6 +2053,8 @@ function updateDashboardStats(all, fD, prepackCount) {
                 });
             }
         }
+    
+        refreshConfirmBtn();
     }
 
     (function(){
