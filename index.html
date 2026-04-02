@@ -471,15 +471,23 @@ document.addEventListener('click', (e) => {
         if (inp && !['INPUT','TEXTAREA','SELECT','OPTION','BUTTON'].includes(e.target.tagName) && !e.target.closest('.modal-content')) { inp.focus(); }
     });
 
+    function _localDateStr(d) {
+        // Returns YYYY-MM-DD in local timezone (avoids UTC offset on DST change)
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
     window.onload = () => { 
-        const today = new Date().toISOString().split('T')[0];
+        const today = _localDateStr(new Date());
         document.querySelectorAll('input[type="date"]').forEach(i => i.value = today);
     
         try {
             var todayObj = new Date();
-            var end = todayObj.toISOString().split('T')[0];
+            var end = _localDateStr(todayObj);
             var startObj = new Date(todayObj.getTime() - (7 * 24 * 60 * 60 * 1000));
-            var start = startObj.toISOString().split('T')[0];
+            var start = _localDateStr(startObj);
             var sEl = document.getElementById('search-start-date');
             var eEl = document.getElementById('search-end-date');
             if (sEl) sEl.value = start;
@@ -867,7 +875,12 @@ function handleScan(v, mode) {
     function _fmt(val) { return (val === undefined || val === null) ? "" : String(val); }
 
     function _nowDateClean(){
-        return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        // Use local date (not UTC) to avoid DST/timezone offset causing wrong date
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`; // YYYY-MM-DD (local)
     }
 
     function _nowTime(){
