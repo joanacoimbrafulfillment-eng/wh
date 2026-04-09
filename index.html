@@ -586,8 +586,10 @@ document.addEventListener('click', (e) => {
         const inRange = (d) => (d && d >= start && d <= end);
 
         if (type === 'ACTIVITY') {
-            const snap = await db.ref('registos').once('value');
-            const batchSnap = await db.ref('active_batches').once('value');
+            const [snap, batchSnap] = await Promise.all([
+                db.ref('registos').orderByChild('dateClean').startAt(start).endAt(end).once('value'),
+                db.ref('active_batches').once('value')
+            ]);
             const batches = batchSnap.val() || {};
 
             Object.values(snap.val() || {}).forEach(r => {
@@ -1408,13 +1410,14 @@ function _parseIds(raw) {
         const date = document.getElementById('perf-date-filter').value;
         const tbody = document.querySelector('#perf-table tbody');
         let stats = {};
-        db.ref('registos').once('value', snap => {
-            db.ref('pre_packing').once('value', preSnap => {
-                Object.values(snap.val() || {}).forEach(r => { if(r.dateClean === date) { if(!stats[r.user]) stats[r.user] = { p:0, r:0, pre:0 }; if(r.mode === 'PACKING') stats[r.user].p++; if(r.mode === 'RETURN') stats[r.user].r++; } });
-                Object.values(preSnap.val() || {}).forEach(p => { if(p.dateClean === date) { if(!stats[p.user]) stats[p.user] = { p:0, r:0, pre:0 }; stats[p.user].pre++; } });
-                tbody.innerHTML = "";
-                Object.keys(stats).sort().forEach(u => { const s = stats[u]; tbody.innerHTML += `<tr><td><b>${u}</b></td><td>${s.p}</td><td>${s.r}</td><td>${s.pre}</td><td>${s.p+s.r+s.pre}</td></tr>`; });
-            });
+        Promise.all([
+            db.ref('registos').orderByChild('dateClean').equalTo(date).once('value'),
+            db.ref('pre_packing').orderByChild('dateClean').equalTo(date).once('value')
+        ]).then(([snap, preSnap]) => {
+            Object.values(snap.val() || {}).forEach(r => { if(!stats[r.user]) stats[r.user] = { p:0, r:0, pre:0 }; if(r.mode === 'PACKING') stats[r.user].p++; if(r.mode === 'RETURN') stats[r.user].r++; });
+            Object.values(preSnap.val() || {}).forEach(p => { if(!stats[p.user]) stats[p.user] = { p:0, r:0, pre:0 }; stats[p.user].pre++; });
+            tbody.innerHTML = "";
+            Object.keys(stats).sort().forEach(u => { const s = stats[u]; tbody.innerHTML += `<tr><td><b>${u}</b></td><td>${s.p}</td><td>${s.r}</td><td>${s.pre}</td><td>${s.p+s.r+s.pre}</td></tr>`; });
         });
     }
 
