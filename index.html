@@ -488,8 +488,22 @@
         return expected.filter(id => !cancelledSet.has(id));
     }
 
-document.addEventListener('click', (e) => {
-        const inp = document.getElementById('main-input');
+function getActiveScanInput(){
+        const active = document.querySelector('.section.active');
+        if(active){
+            if(active.id === 'sec-refunds') return document.getElementById('refund-input');
+            if(active.id === 'sec-returns') return document.getElementById('return-input');
+            if(active.id === 'sec-prepack') return document.getElementById('prepack-input');
+            if(active.id === 'sec-warehouse') return document.getElementById('main-input');
+        }
+        if(currentMode === 'REFUND') return document.getElementById('refund-input');
+        if(currentMode === 'RETURN' || currentMode === 'RETURNS') return document.getElementById('return-input');
+        if(currentMode === 'PREPACK') return document.getElementById('prepack-input');
+        return document.getElementById('main-input');
+    }
+
+    document.addEventListener('click', (e) => {
+        const inp = getActiveScanInput();
         if (inp && !['INPUT','TEXTAREA','SELECT','OPTION','BUTTON'].includes(e.target.tagName) && !e.target.closest('.modal-content')) { inp.focus(); }
     });
 
@@ -574,6 +588,7 @@ document.addEventListener('click', (e) => {
         }
         
         if(id === 'sec-warehouse') {
+            currentMode = 'PACKING';
             // keep PACKING date selector in sync with the global date filter
             try {
                 const gd = document.getElementById('global-date-filter');
@@ -584,6 +599,10 @@ document.addEventListener('click', (e) => {
             const saved = localStorage.getItem('lastPackingBatch');
             if(saved) { setTimeout(() => { const sel = document.getElementById('wh-batch-select'); if(sel && sel.querySelector(`option[value="${saved}"]`)) { sel.value = saved; loadBatchData(saved); } }, 300); }
         }
+        if(id === 'sec-returns') currentMode = 'RETURN';
+        if(id === 'sec-refunds') currentMode = 'REFUND';
+        if(id === 'sec-prepack') currentMode = 'PREPACK';
+        if(id === 'sec-picking') currentMode = 'PICKING';
         
         resetScan();
         if(id === 'sec-prepack') loadPrePackHistory();
@@ -885,7 +904,7 @@ function handleScan(v, mode) {
         document.getElementById('meta-cancel-banner').style.display = 'none'; 
         document.getElementById('btn-confirm-order').style.display = 'none';
         refreshConfirmBtn(); 
-        const inp = document.getElementById('main-input'); if(inp) { inp.value = ""; inp.focus(); }
+        const inp = getActiveScanInput(); if(inp) { inp.value = ""; inp.focus(); }
     }
 
     // --- OTHER LOGICS ---
@@ -2122,6 +2141,21 @@ function updateDashboardStats(all, fD, prepackCount) {
                 rvProds.innerHTML = "";
                 list.forEach(name => {
                     rvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
+                });
+            }
+        }
+
+        // Refunds UI (fv-*)
+        const fvId = document.getElementById('fv-id');
+        const fvTr = document.getElementById('fv-track');
+        const fvProds = document.getElementById('fv-prods');
+        if ((m || currentMode) === 'REFUND' || (m || currentMode) === 'REFUNDS') {
+            if (fvId) fvId.textContent = scanData.id || "-";
+            if (fvTr) fvTr.textContent = scanData.track || "-";
+            if (fvProds) {
+                fvProds.innerHTML = "";
+                list.forEach(name => {
+                    fvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
                 });
             }
         }
