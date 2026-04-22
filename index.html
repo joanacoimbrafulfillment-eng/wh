@@ -435,7 +435,7 @@
     const auth = firebase.auth(), db = firebase.database();
 
     // scanData now includes startTime and endTime
-    let currentUser = null, scanData = { id: "", track: "", prods: [], startTime: "", endTime: "" };
+    let currentUser = null, scanData = { id: "", track: "", prods: [], startTime: "", endTime: "", startTs: null, endTs: null };
     let isAdminUser = false;
     let masterProductsDB = {}, currentMode = "PACKING", activeBatchData = null, activeBatchPath = null;
 
@@ -471,23 +471,15 @@ document.addEventListener('click', (e) => {
         if (inp && !['INPUT','TEXTAREA','SELECT','OPTION','BUTTON'].includes(e.target.tagName) && !e.target.closest('.modal-content')) { inp.focus(); }
     });
 
-    function _localDateStr(d) {
-        // Returns YYYY-MM-DD in local timezone (avoids UTC offset on DST change)
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }
-
     window.onload = () => { 
-        const today = _localDateStr(new Date());
+        const today = new Date().toISOString().split('T')[0];
         document.querySelectorAll('input[type="date"]').forEach(i => i.value = today);
     
         try {
             var todayObj = new Date();
-            var end = _localDateStr(todayObj);
+            var end = todayObj.toISOString().split('T')[0];
             var startObj = new Date(todayObj.getTime() - (7 * 24 * 60 * 60 * 1000));
-            var start = _localDateStr(startObj);
+            var start = startObj.toISOString().split('T')[0];
             var sEl = document.getElementById('search-start-date');
             var eEl = document.getElementById('search-end-date');
             if (sEl) sEl.value = start;
@@ -586,10 +578,8 @@ document.addEventListener('click', (e) => {
         const inRange = (d) => (d && d >= start && d <= end);
 
         if (type === 'ACTIVITY') {
-            const [snap, batchSnap] = await Promise.all([
-                db.ref('registos').orderByChild('dateClean').startAt(start).endAt(end).once('value'),
-                db.ref('active_batches').once('value')
-            ]);
+            const snap = await db.ref('registos').once('value');
+            const batchSnap = await db.ref('active_batches').once('value');
             const batches = batchSnap.val() || {};
 
             Object.values(snap.val() || {}).forEach(r => {
@@ -784,7 +774,7 @@ function handleScan(v, mode) {
             const prodName = masterProductsDB[key]; scanData.prods.push(prodName);
         } else if(/^\d{8}$/.test(v)) {
             // RECORD START TIME ON FIRST SCAN OF ID
-            if(!scanData.id) scanData.startTime = _nowTime();
+            if(!scanData.id){ scanData.startTime = _nowTime(); scanData.startTs = Date.now(); }
             scanData.id = v; if(m === 'PACKING') showMetadata(v); 
         } else {
             scanData.track = v;
@@ -808,6 +798,7 @@ function handleScan(v, mode) {
 // Work day: the real day the operator is performing the action
         const workDc = _nowDateClean();
         const endTime = _nowTime();
+        const endTs = Date.now();
 
         // Business day: the day of the batch (shipping day) for PACKING
         let dc = workDc;
@@ -838,6 +829,8 @@ function handleScan(v, mode) {
                 user: currentUser.email.split('@')[0].toUpperCase(),
                 startTime: scanData.startTime || endTime,
                 endTime: endTime,
+                startTs: (typeof scanData.startTs === 'number') ? scanData.startTs : null,
+                endTs: endTs,
                 time: endTime, // Main sorting time
 
                 // Date used for totals / exports (shipping day in PACKING)
@@ -858,7 +851,7 @@ function handleScan(v, mode) {
     }
 
     function resetScan() {
-        scanData = {id:"", track:"", prods:[], startTime: "", endTime: ""}; 
+        scanData = {id:"", track:"", prods:[], startTime: "", endTime: "", startTs: null, endTs: null}; 
         const labels = ['v-id', 'v-track', 'meta-cust-name', 'meta-inv-content', 'rv-id', 'rv-track'];
         labels.forEach(id => { const el = document.getElementById(id); if(el) el.innerText = "-"; });
         const containers = ['v-prods', 'rv-prods'];
@@ -877,12 +870,7 @@ function handleScan(v, mode) {
     function _fmt(val) { return (val === undefined || val === null) ? "" : String(val); }
 
     function _nowDateClean(){
-        // Use local date (not UTC) to avoid DST/timezone offset causing wrong date
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`; // YYYY-MM-DD (local)
+        return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     }
 
     function _nowTime(){
@@ -1346,7 +1334,7 @@ function _parseIds(raw) {
             // PACKING/RETURNS from registos (range-limited)
             Object.values(regData).forEach(function(r){
                 if(!r || r.id !== sid) return;
-                if(r.mode !== 'PACKING' && r.mode !== 'RETURN') return;
+                if(r.mode !== 'PACKING' && r.mode !== 'RETURN' && r.mode !== 'RETURNS' && r.mode !== 'RETURNED') return;
 
                 var batchKey = r.batch || "GENERAL";
                 // batchData in range may not include this batch if its dateClean outside range; fallback read minimal batch info not done (perf tradeoff)
@@ -1410,14 +1398,13 @@ function _parseIds(raw) {
         const date = document.getElementById('perf-date-filter').value;
         const tbody = document.querySelector('#perf-table tbody');
         let stats = {};
-        Promise.all([
-            db.ref('registos').orderByChild('dateClean').equalTo(date).once('value'),
-            db.ref('pre_packing').orderByChild('dateClean').equalTo(date).once('value')
-        ]).then(([snap, preSnap]) => {
-            Object.values(snap.val() || {}).forEach(r => { if(!stats[r.user]) stats[r.user] = { p:0, r:0, pre:0 }; if(r.mode === 'PACKING') stats[r.user].p++; if(r.mode === 'RETURN') stats[r.user].r++; });
-            Object.values(preSnap.val() || {}).forEach(p => { if(!stats[p.user]) stats[p.user] = { p:0, r:0, pre:0 }; stats[p.user].pre++; });
-            tbody.innerHTML = "";
-            Object.keys(stats).sort().forEach(u => { const s = stats[u]; tbody.innerHTML += `<tr><td><b>${u}</b></td><td>${s.p}</td><td>${s.r}</td><td>${s.pre}</td><td>${s.p+s.r+s.pre}</td></tr>`; });
+        db.ref('registos').once('value', snap => {
+            db.ref('pre_packing').once('value', preSnap => {
+                Object.values(snap.val() || {}).forEach(r => { if(r.dateClean === date) { if(!stats[r.user]) stats[r.user] = { p:0, r:0, pre:0 }; if(r.mode === 'PACKING') stats[r.user].p++; if(r.mode === 'RETURN' || r.mode === 'RETURNS' || r.mode === 'RETURNED') stats[r.user].r++; } });
+                Object.values(preSnap.val() || {}).forEach(p => { if(p.dateClean === date) { if(!stats[p.user]) stats[p.user] = { p:0, r:0, pre:0 }; stats[p.user].pre++; } });
+                tbody.innerHTML = "";
+                Object.keys(stats).sort().forEach(u => { const s = stats[u]; tbody.innerHTML += `<tr><td><b>${u}</b></td><td>${s.p}</td><td>${s.r}</td><td>${s.pre}</td><td>${s.p+s.r+s.pre}</td></tr>`; });
+            });
         });
     }
 
@@ -1954,7 +1941,7 @@ function updateDashboardStats(all, fD, prepackCount) {
                 const k = ch.key;
                 const r = ch.val() || {};
                 const mode = (r.mode || r.Type || "").toString().toUpperCase();
-                if (mode !== "RETURN" && mode !== "RETURNS") return;
+                if (mode !== "RETURN" && mode !== "RETURNS" && mode !== "RETURNED") return;
 
                 // Only the selected day (today) on this realtime view
                 if ((r.dateClean || "") !== today) return;
