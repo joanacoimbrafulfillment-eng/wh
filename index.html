@@ -14,7 +14,7 @@
     
     <style>
         :root { 
-            --primary: #2c3e50; --accent: #3498db; --packing: #28a745; --picking: #8e44ad; --returns: #ff3d00; --error: #e74c3c; --bg: #f4f7f6;
+            --primary: #2c3e50; --accent: #3498db; --packing: #28a745; --picking: #8e44ad; --returns: #ff3d00; --refunds: #f59e0b; --error: #e74c3c; --bg: #f4f7f6;
             --color-ctt: #2ecc71; --color-nacex: #9b59b6; --color-correos: #3498db;
             --color-printed: #ff851b; --color-ready: #28a745; --color-packed: #0056b3;
             --color-prepack: #16a085;
@@ -164,6 +164,7 @@
                     <option value="CANCELLED">CANCELLED</option>
                     <option value="PACKING">PACKING</option>
                     <option value="RETURNS">RETURNS</option>
+                    <option value="REFUNDS">REFUNDS</option>
                 </select>
             </div>
             <div style="min-width:220px; flex:1;">
@@ -256,6 +257,7 @@
                             <option value="CANCELLED">CANCELLED</option>
                             <option value="PACKING">PACKING</option>
                             <option value="RETURNS">RETURNS</option>
+                            <option value="REFUNDS">REFUNDS</option>
                         </select>
                     </div>
                     <div>
@@ -407,6 +409,23 @@
             </div>
         </div>
 
+        <!-- SECTION: REFUNDS -->
+        <div id="sec-refunds" class="section">
+            <div class="card scan-area" style="text-align:center;">
+                <h2>💸 REFUNDS SCANNER</h2>
+                <input type="text" id="refund-input" placeholder="SCAN ID, TRACK OR PRODUCT..." style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--refunds); border-radius:15px;" autocomplete="off" onkeypress="if(event.key==='Enter'){handleScan(this.value, 'REFUND'); this.value='';}">
+            </div>
+            <div class="card">
+                <p style="font-size:22px;">ID: <b id="fv-id">-</b> | Track: <b id="fv-track">-</b></p>
+                <div id="fv-prods" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;"></div>
+                <button class="btn-mobile-op" style="background:var(--refunds);" onclick="confirmOrder('REFUND')">SAVE REFUND</button>
+            </div>
+            <div class="card">
+                <h3>Recent Refunds</h3>
+                <div class="scroll-area"><table id="recent-refunds-table"><thead><tr><th>Time</th><th>User</th><th>ID</th><th>Items</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+            </div>
+        </div>
+
         <!-- OTHERS -->
         <div id="sec-prepack" class="section">
             <div class="card" style="text-align:center;"><h2>📦 PRE-PACKING</h2><input type="text" id="prepack-input" placeholder="SCAN..." style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--color-prepack); border-radius:15px;" onkeypress="if(event.key==='Enter'){handlePrePack(this.value); this.value='';}"></div>
@@ -448,6 +467,7 @@
 
     let __prepackTodayRef = null, __prepackTodayCb = null;
     let __returnsTodayRef = null, __returnsTodayCb = null;
+    let __refundsTodayRef = null, __refundsTodayCb = null;
 
     let __processedRegRef = null, __processedRegCb = null;
 
@@ -455,6 +475,8 @@
 
 
     function safeKey(str) { if(!str) return "UNKNOWN"; return str.toString().replace(/[.#$/[\]]/g, "_").trim().toUpperCase(); }
+    function _isReturnMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'RETURN' || m === 'RETURNS' || m === 'RETURNED'; }
+    function _isRefundMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'REFUND' || m === 'REFUNDS' || m === 'REFUNDED'; }
 
     
 
@@ -514,10 +536,12 @@ document.addEventListener('click', (e) => {
              <div class="nav-item" onclick="tab('sec-office', this)">OFFICE</div>
              <div class="nav-item" onclick="tab('sec-picking', this)">PICKING</div>
              <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>
-             <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>` :
+             <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
+             <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>` :
             `<div class="nav-item" onclick="tab('sec-picking', this)">PICKING</div>
              <div class="nav-item" onclick="tab('sec-prepack', this)">PRE-PACKING</div>
              <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
+             <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>
              <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>`;
         
         syncGlobalData();
@@ -528,7 +552,7 @@ document.addEventListener('click', (e) => {
     function tab(id, el) {
         // --- ACCESS GUARD (WH users only see Picking, Pre-Packing, Returns, Packing) ---
         if(!isAdminUser) {
-            const allowed = ['sec-picking','sec-prepack','sec-returns','sec-warehouse'];
+            const allowed = ['sec-picking','sec-prepack','sec-returns','sec-refunds','sec-warehouse'];
             if(!allowed.includes(id)) {
                 id = 'sec-picking';
                 el = document.querySelector('[onclick*="sec-picking"]');
@@ -564,6 +588,7 @@ document.addEventListener('click', (e) => {
         resetScan();
         if(id === 'sec-prepack') loadPrePackHistory();
         if(id === 'sec-returns') loadRecentReturns();
+        if(id === 'sec-refunds') loadRecentRefunds();
     }
 
     function logout() { auth.signOut(); localStorage.removeItem('lastPackingBatch'); }
@@ -852,9 +877,9 @@ function handleScan(v, mode) {
 
     function resetScan() {
         scanData = {id:"", track:"", prods:[], startTime: "", endTime: "", startTs: null, endTs: null}; 
-        const labels = ['v-id', 'v-track', 'meta-cust-name', 'meta-inv-content', 'rv-id', 'rv-track'];
+        const labels = ['v-id', 'v-track', 'meta-cust-name', 'meta-inv-content', 'rv-id', 'rv-track', 'fv-id', 'fv-track'];
         labels.forEach(id => { const el = document.getElementById(id); if(el) el.innerText = "-"; });
-        const containers = ['v-prods', 'rv-prods'];
+        const containers = ['v-prods', 'rv-prods', 'fv-prods'];
         containers.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ""; });
         document.getElementById('packing-info-display').style.display = 'none'; 
         document.getElementById('meta-cancel-banner').style.display = 'none'; 
@@ -990,6 +1015,7 @@ function _parseIds(raw) {
             var dot = "var(--accent)";
             if (type === "PACKING") dot = "var(--packing)";
             if (type === "RETURNS") dot = "var(--returns)";
+            if (type === "REFUNDS") dot = "var(--refunds)";
             if (type === "CANCELLED") dot = "var(--error)";
             if (type.indexOf("OFFICE") === 0) dot = "var(--primary)";
 
@@ -1334,7 +1360,7 @@ function _parseIds(raw) {
             // PACKING/RETURNS from registos (range-limited)
             Object.values(regData).forEach(function(r){
                 if(!r || r.id !== sid) return;
-                if(r.mode !== 'PACKING' && r.mode !== 'RETURN' && r.mode !== 'RETURNS' && r.mode !== 'RETURNED') return;
+                if(r.mode !== 'PACKING' && !_isReturnMode(r.mode) && !_isRefundMode(r.mode)) return;
 
                 var batchKey = r.batch || "GENERAL";
                 // batchData in range may not include this batch if its dateClean outside range; fallback read minimal batch info not done (perf tradeoff)
@@ -1365,17 +1391,18 @@ function _parseIds(raw) {
                         summary.tracking = _fmt(r.track);
                     }
                 } else {
-                    if (!_passesType("RETURNS", filters.type)) return;
-                    var dtR = _dtKey(r.dateClean, r.time);
+                    var evType = _isRefundMode(r.mode) ? "REFUNDS" : "RETURNS";
+                    if (!_passesType(evType, filters.type)) return;
+                    var dtR = _dtKey(r.dateClean, r.endTime || r.time);
                     events.push({
                         DateTime: dtR,
-                        Type: "RETURNS",
+                        Type: evType,
                         Batch: batchName,
                         Carrier: carrier,
                         User: _fmt(r.user),
                         Tracking: _fmt(r.track),
                         Items_or_Content: _fmt(r.prods),
-                        Details: "Return saved"
+                        Details: _isRefundMode(r.mode) ? "Refund saved" : "Return saved"
                     });
                 }
             });
@@ -1400,7 +1427,7 @@ function _parseIds(raw) {
         let stats = {};
         db.ref('registos').once('value', snap => {
             db.ref('pre_packing').once('value', preSnap => {
-                Object.values(snap.val() || {}).forEach(r => { if(r.dateClean === date) { if(!stats[r.user]) stats[r.user] = { p:0, r:0, pre:0 }; if(r.mode === 'PACKING') stats[r.user].p++; if(r.mode === 'RETURN' || r.mode === 'RETURNS' || r.mode === 'RETURNED') stats[r.user].r++; } });
+                Object.values(snap.val() || {}).forEach(r => { if(r.dateClean === date) { if(!stats[r.user]) stats[r.user] = { p:0, r:0, pre:0 }; if(r.mode === 'PACKING') stats[r.user].p++; if(_isReturnMode(r.mode) || _isRefundMode(r.mode)) stats[r.user].r++; } });
                 Object.values(preSnap.val() || {}).forEach(p => { if(p.dateClean === date) { if(!stats[p.user]) stats[p.user] = { p:0, r:0, pre:0 }; stats[p.user].pre++; } });
                 tbody.innerHTML = "";
                 Object.keys(stats).sort().forEach(u => { const s = stats[u]; tbody.innerHTML += `<tr><td><b>${u}</b></td><td>${s.p}</td><td>${s.r}</td><td>${s.pre}</td><td>${s.p+s.r+s.pre}</td></tr>`; });
@@ -1941,7 +1968,7 @@ function updateDashboardStats(all, fD, prepackCount) {
                 const k = ch.key;
                 const r = ch.val() || {};
                 const mode = (r.mode || r.Type || "").toString().toUpperCase();
-                if (mode !== "RETURN" && mode !== "RETURNS" && mode !== "RETURNED") return;
+                if (!_isReturnMode(mode)) return;
 
                 // Only the selected day (today) on this realtime view
                 if ((r.dateClean || "") !== today) return;
@@ -1970,6 +1997,48 @@ function updateDashboardStats(all, fD, prepackCount) {
         };
 
         __returnsTodayRef.on('value', __returnsTodayCb);
+    }
+
+    function loadRecentRefunds() {
+        const tbody = document.querySelector('#recent-refunds-table tbody');
+        if (!tbody) return;
+        const today = _nowDateClean();
+        const u = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN";
+
+        if(__refundsTodayRef && __refundsTodayCb){ __refundsTodayRef.off('value', __refundsTodayCb); }
+
+        __refundsTodayRef = db.ref('registos').orderByChild('user').equalTo(u).limitToLast(400);
+        __refundsTodayCb = (snap) => {
+            const rows = [];
+            snap.forEach(ch => {
+                const k = ch.key;
+                const r = ch.val() || {};
+                const mode = (r.mode || r.Type || "").toString().toUpperCase();
+                if (!_isRefundMode(mode)) return;
+                if ((r.dateClean || "") !== today) return;
+                if (((r.user || "").toString().toUpperCase()) !== u) return;
+
+                const dc = r.dateClean || "";
+                const tm = r.endTime || r.time || "";
+                const dt = r.DateTime || _dtKey(dc, tm);
+                const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
+
+                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", ts, dt });
+            });
+
+            rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
+
+            tbody.innerHTML = rows.map(r => `
+<tr>
+  <td>${_fmt(r.tm)}</td>
+  <td>${_fmt(r.user)}</td>
+  <td>${_fmt(r.id)}</td>
+  <td>${_fmt(r.items)}</td>
+  <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
+</tr>`).join('');
+        };
+
+        __refundsTodayRef.on('value', __refundsTodayCb);
     }
 
     function loadPrePackHistory() {
@@ -2111,7 +2180,7 @@ function updateDashboardStats(all, fD, prepackCount) {
 // ===== OPS HARD GUARD (Profile C: OPS locked / Office sees all) =====
 (function(){
   var PROFILE = "OPS";
-  var ALLOWED = ['sec-picking','sec-prepacking','sec-prepack','sec-returns','sec-warehouse','sec-packing'];
+  var ALLOWED = ['sec-picking','sec-prepacking','sec-prepack','sec-returns','sec-refunds','sec-warehouse','sec-packing'];
 
   function isAllowed(id){
     return !!id && ALLOWED.indexOf(String(id)) !== -1;
