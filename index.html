@@ -103,6 +103,23 @@
     </div>
 </div>
 
+<!-- MODAL: VOLUMES ALERT -->
+<div id="volumes-alert-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; justify-content:center; align-items:center; padding:20px;">
+    <div style="background:white; border-radius:25px; width:100%; max-width:480px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); text-align:center;">
+        <div style="background:#f59e0b; padding:30px 20px;">
+            <div style="font-size:60px;">📦</div>
+            <div style="font-size:32px; font-weight:900; color:white; margin-top:10px;" id="volumes-alert-title">ATENÇÃO</div>
+        </div>
+        <div style="padding:30px 25px;">
+            <div id="volumes-alert-msg" style="font-size:22px; font-weight:700; color:#1e293b; line-height:1.4;"></div>
+            <button onclick="document.getElementById('volumes-alert-modal').style.display='none'; document.getElementById('main-input').focus();"
+                style="margin-top:30px; width:100%; padding:25px; font-size:24px; font-weight:900; background:#f59e0b; color:white; border:none; border-radius:15px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
+                OK, ENTENDIDO
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL: DETALHES DO LOTE -->
 <div id="edit-batch-modal" class="modal">
     <div class="modal-content">
@@ -369,9 +386,17 @@
                         <button class="btn-dismiss" onclick="resetScan()">CLEAR SCAN</button>
                     </div>
                     <p style="font-size:20px;">ID: <b id="v-id">-</b> | Track: <b id="v-track">-</b></p>
+                    <div id="v-volumes-status" style="display:none; margin:6px 0; padding:8px 14px; border-radius:10px; background:#fef3c7; border:1px solid #f59e0b; font-size:15px; font-weight:900;"></div>
                     <div id="packing-info-display" style="display:none; border:2px solid #ddd; padding:15px; border-radius:10px; background:#fcfcfc;">
-                        <div style="font-size:10px; font-weight:bold; color:#777;">CUSTOMER:</div> <div id="meta-cust-name" style="font-size:20px; font-weight:bold;">-</div>
-                        <div style="font-size:10px; font-weight:bold; color:#777;">EXPECTED CONTENT:</div> <div id="meta-inv-content" style="font-size:20px; font-weight:bold; color:var(--accent);">-</div>
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <div style="flex:1;">
+                                <div style="font-size:10px; font-weight:bold; color:#777;">CUSTOMER:</div>
+                                <div id="meta-cust-name" style="font-size:20px; font-weight:bold;">-</div>
+                            </div>
+                            <div id="meta-volumes-badge" style="display:none; background:#f59e0b; color:#fff; padding:8px 16px; border-radius:10px; font-size:22px; font-weight:900; white-space:nowrap;"></div>
+                        </div>
+                        <div style="font-size:10px; font-weight:bold; color:#777; margin-top:10px;">EXPECTED CONTENT:</div>
+                        <div id="meta-inv-content" style="font-size:20px; font-weight:bold; color:var(--accent);">-</div>
                     </div>
                     <div id="v-prods" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;"></div>
                 </div>
@@ -454,7 +479,7 @@
     const auth = firebase.auth(), db = firebase.database();
 
     // scanData now includes startTime and endTime
-    let currentUser = null, scanData = { id: "", track: "", prods: [], startTime: "", endTime: "", startTs: null, endTs: null };
+    let currentUser = null, scanData = { id: "", track: "", tracks: [], prods: [], startTime: "", endTime: "", startTs: null, endTs: null };
     let isAdminUser = false;
     let masterProductsDB = {}, currentMode = "PACKING", activeBatchData = null, activeBatchPath = null;
 
@@ -801,7 +826,21 @@ function getActiveScanInput(){
         if(scanData.id && scanData.track){
             if((currentMode || 'PACKING') === 'PACKING'){
                 const chk = packingMeetsExpected();
-                btn.style.display = chk.ok ? 'block' : 'none';
+                const requiredVols = (activeBatchData && activeBatchData.order_volumes && activeBatchData.order_volumes[scanData.id]) || 1;
+                const gotTracks = (scanData.tracks && scanData.tracks.length) || (scanData.track ? 1 : 0);
+                const volOk = gotTracks >= requiredVols;
+                btn.style.display = (chk.ok && volOk) ? 'block' : 'none';
+                // Update volumes indicator
+                const volEl = document.getElementById('v-volumes-status');
+                if(volEl){
+                    if(requiredVols > 1){
+                        volEl.style.display = 'block';
+                        volEl.innerHTML = `<b>Volumes:</b> ${gotTracks}/${requiredVols} trackings picados`;
+                        volEl.style.color = volOk ? '#166534' : '#b45309';
+                    } else {
+                        volEl.style.display = 'none';
+                    }
+                }
             } else {
                 btn.style.display = 'block';
             }
@@ -821,7 +860,12 @@ function handleScan(v, mode) {
             if(!scanData.id){ scanData.startTime = _nowTime(); scanData.startTs = Date.now(); }
             scanData.id = v; if(m === 'PACKING') showMetadata(v); 
         } else {
-            scanData.track = v;
+            // tracking: support multiple volumes
+            if(!scanData.tracks) scanData.tracks = [];
+            if(!scanData.tracks.includes(v)) {
+                scanData.tracks.push(v);
+            }
+            scanData.track = scanData.tracks[0]; // backwards compat
         }
         updateDisplay(m);
         refreshConfirmBtn();
@@ -837,6 +881,12 @@ function handleScan(v, mode) {
             const chk = packingMeetsExpected();
             if(!chk.ok){
                 return alert("ERRO: faltam picar itens deste ID:\n- " + chk.missing.join("\n- "));
+            }
+            // ✅ VOLUMES: check all trackings have been scanned
+            const requiredVols = (activeBatchData && activeBatchData.order_volumes && activeBatchData.order_volumes[scanData.id]) || 1;
+            const gotTracks = (scanData.tracks && scanData.tracks.length) || 1;
+            if(gotTracks < requiredVols){
+                return alert(`ERRO: Este ID tem ${requiredVols} volumes.\nFaltam ${requiredVols - gotTracks} tracking(s).\n(${gotTracks}/${requiredVols} picados)`);
             }
         }
 // Work day: the real day the operator is performing the action
@@ -864,9 +914,12 @@ function handleScan(v, mode) {
                 logBatchAction(bId, `PACKED ID: ${scanData.id}`);
             }
 
+            const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
             await db.ref('registos').push({
                 id: scanData.id,
-                track: scanData.track,
+                track: allTracks[0],
+                tracks: allTracks.join(' | '),
+                volumes: allTracks.length,
                 prods: scanData.prods.join(' | ') || 'No Items',
                 mode: m,
                 batch: bId || 'GENERAL',
@@ -895,9 +948,11 @@ function handleScan(v, mode) {
     }
 
     function resetScan() {
-        scanData = {id:"", track:"", prods:[], startTime: "", endTime: "", startTs: null, endTs: null}; 
+        scanData = {id:"", track:"", tracks:[], prods:[], startTime: "", endTime: "", startTs: null, endTs: null}; 
         const labels = ['v-id', 'v-track', 'meta-cust-name', 'meta-inv-content', 'rv-id', 'rv-track', 'fv-id', 'fv-track'];
         labels.forEach(id => { const el = document.getElementById(id); if(el) el.innerText = "-"; });
+        const badge = document.getElementById('meta-volumes-badge');
+        if(badge) badge.style.display = 'none';
         const containers = ['v-prods', 'rv-prods', 'fv-prods'];
         containers.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ""; });
         document.getElementById('packing-info-display').style.display = 'none'; 
@@ -1503,12 +1558,13 @@ if(metaEl){
                 tbody.innerHTML += `<tr><td>${k}</td><td>${readOnly ? it.q : `<input type="number" style="width:70px;" value="${it.q}" onchange="db.ref('active_batches/${batchId}/inventory/${k}/q').set(parseInt(this.value))">`}</td><td>${it.pos}</td>${readOnly ? '' : `<td><button class="btn-small btn-delete" onclick="db.ref('active_batches/${batchId}/inventory/${k}').remove()">X</button></td>`}</tr>`;
             });
             const idsList = document.getElementById('edit-ids-list');
-            let html = '<table><thead><tr><th>ID</th><th>Cliente</th><th>Content</th><th>Status</th><th>Ação</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>ID</th><th>Cliente</th><th>Content</th><th>Vol</th><th>Status</th><th>Ação</th></tr></thead><tbody>';
             (b.expected_ids||[]).forEach(id => {
                 const isPack = (b.processed_ids && b.processed_ids[id]);
                 const isCancel = (b.cancelled_ids && b.cancelled_ids[id]);
                 const det = (b.order_details||{})[id] || {name:"N/A"};
                 const cancelInfo = isCancel ? b.cancelled_ids[id] : null;
+                const vols = ((b.order_volumes||{})[id]) || 1;
 
                 const statusTxt = isCancel ? 'CANCELLED' : (isPack ? 'PACKED' : 'PENDING');
                 const statusColor = isCancel ? 'var(--error)' : (isPack ? 'green' : 'orange');
@@ -1516,12 +1572,17 @@ if(metaEl){
                 const idCls = isCancel ? 'cancelled-id' : '';
                 const reason = cancelInfo ? (cancelInfo.reason || '') : '';
 
+                const volBadge = vols > 1
+                    ? `<span style="background:#f59e0b; color:#fff; padding:3px 10px; border-radius:7px; font-weight:900; font-size:13px;">📦 ${vols}</span>`
+                    : `<span style="color:#aaa;">1</span>`;
+
                 html += `<tr class="${rowCls}">
                             <td>
                                 <b class="${idCls}" title="${reason ? ('CANCELLED: ' + reason) : ''}">${id}</b>
                             </td>
                             <td>${det.name}</td>
                             <td><small>${det.content || 'N/A'}</small></td>
+                            <td>${volBadge}</td>
                             <td style="color:${statusColor}; font-weight:900;">${statusTxt}</td>
                             <td>${
                                 readOnly ? '' : (isCancel ? '' : `<button class="btn-small btn-delete" onclick="cancelBatchId('${batchId}', '${id}')">CANCEL</button>`)
@@ -1810,6 +1871,24 @@ Missing: ${sample}${more}`);
             document.getElementById('packing-info-display').style.display = 'block';
             document.getElementById('meta-cust-name').innerText = activeBatchData.order_details[id].name;
             document.getElementById('meta-inv-content').innerText = activeBatchData.order_details[id].content;
+        }
+        // Volumes badge
+        const vols = (activeBatchData.order_volumes && activeBatchData.order_volumes[id]) || 1;
+        const badge = document.getElementById('meta-volumes-badge');
+        if(badge) {
+            if(vols > 1) {
+                badge.style.display = 'block';
+                badge.textContent = `📦 ${vols} VOLUMES`;
+                // Show custom modal instead of alert
+                const modal = document.getElementById('volumes-alert-modal');
+                const msg = document.getElementById('volumes-alert-msg');
+                if(modal && msg) {
+                    msg.innerHTML = `Este ID tem <span style="font-size:36px; color:#f59e0b; font-weight:900;">${vols} volumes</span>.<br>Tens de picar <b>${vols} trackings</b> diferentes antes de confirmar.`;
+                    modal.style.display = 'flex';
+                }
+            } else {
+                badge.style.display = 'none';
+            }
         }
     }
 
@@ -2109,7 +2188,11 @@ function updateDashboardStats(all, fD, prepackCount) {
         const trEl = document.getElementById('v-track');
 
         if (idEl) idEl.textContent = scanData.id || "-";
-        if (trEl) trEl.textContent = scanData.track || "-";
+        // Show all trackings if multiple
+        if (trEl) {
+            const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : (scanData.track ? [scanData.track] : []);
+            trEl.textContent = allTracks.length > 0 ? allTracks.join(' | ') : "-";
+        }
 
         // Render scanned products (always show in v-prods)
         const prodsEl = document.getElementById('v-prods');
