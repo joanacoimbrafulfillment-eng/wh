@@ -1713,8 +1713,8 @@ Missing: ${sample}${more}`);
     const tm = _nowTime();
     const dt = _dtKey(dc, tm);
 
-    // Keep original behavior first: update only the status (most likely allowed by rules)
-    db.ref('active_batches/' + bId).update({ status: 'READY_TO_PACK' })
+    // Write directly to /status path so @wh.com rules are evaluated correctly
+    db.ref('active_batches/' + bId + '/status').set('READY_TO_PACK')
     .then(() => {
         // Best-effort extra writes (do not block finishing picking if rules reject them)
         const extra = [
