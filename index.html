@@ -1679,6 +1679,16 @@ Missing: ${sample}${more}`);
 
     function loadPickingList() {
         const bId = document.getElementById('pick-batch-select').value; if(!bId) return;
+
+        // Register active picking session so Overview shows who is picking in real time
+        const pickingUser = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : 'UNKNOWN';
+        const pickingStarted = _nowDateTime();
+        db.ref('active_batches/' + bId + '/pickingSession').set({
+            user: pickingUser,
+            startedAt: pickingStarted,
+            ts: Date.now()
+        }).catch(e => console.warn('pickingSession write failed (rules?):', e));
+
         db.ref('active_batches/'+bId).once('value', snap => {
             const container = document.getElementById('picking-list-container'); container.innerHTML = "";
             Object.keys(snap.val().inventory || {}).forEach(k => {
@@ -1714,6 +1724,8 @@ Missing: ${sample}${more}`);
                 pickedTime: tm,
                 pickedAt: dt
             }),
+            // Clear the live picking session now that it's done
+            db.ref('active_batches/' + bId + '/pickingSession').remove(),
             // Local history (if permitted)
             db.ref(`active_batches/${bId}/history`).push({
                 dateClean: dc,
@@ -1754,7 +1766,38 @@ Missing: ${sample}${more}`);
                 const requiredIds = getRequiredBatchIds(b);
                 const tot = requiredIds.length, done = requiredIds.filter(id => (b.processed_ids && b.processed_ids[id])).length;
                 const perc = tot > 0 ? Math.round((done / tot) * 100) : 0;
-                h += `<div class="batch-card"><h4>${b.name}</h4><div style="display:flex; justify-content:space-between; font-size:12px; color:#666;"><span>${perc}% Done</span><span>Status: ${b.status}</span></div>${b.pickedBy ? '<div style="margin-top:6px; font-size:12px; color:#444;"><b>Picked by:</b> ' + b.pickedBy + (b.pickedAt ? ' <span style="color:#666;">@ ' + b.pickedAt + '</span>' : '') + '</div>' : ''}<div class="progress-container"><div class="progress-bar" style="width:${perc}%"></div></div><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn-small" style="background:var(--accent); flex:1;" onclick="openEditModal('${b.id}', false)">EDIT</button><button class="btn-small btn-delete" onclick="deleteBatch('${b.id}')">DEL</button></div></div>`;
+
+                // Live picking session badge (someone is picking RIGHT NOW)
+                let livePickHtml = '';
+                if(b.pickingSession && b.pickingSession.user) {
+                    livePickHtml = `<div style="margin-top:6px; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:900; color:#856404;">
+                        🟡 A recolher: <span style="color:#5a3e00;">${b.pickingSession.user}</span>
+                        ${b.pickingSession.startedAt ? `<span style="font-weight:400; color:#666;"> desde ${b.pickingSession.startedAt}</span>` : ''}
+                    </div>`;
+                }
+
+                // Picked by (completed) — always show; fallback async lookup if missing
+                let pickedHtml = '';
+                if(b.pickedBy) {
+                    pickedHtml = `<div style="margin-top:6px; font-size:12px; color:#444;"><b>Picked by:</b> ${b.pickedBy}${b.pickedAt ? ` <span style="color:#666;">@ ${b.pickedAt}</span>` : ''}</div>`;
+                } else if(b.status === 'READY_TO_PACK' || b.status === 'COMPLETED') {
+                    // Async lookup from registos — renders after
+                    const cardId = 'picked-meta-' + b.id;
+                    pickedHtml = `<div id="${cardId}" style="margin-top:6px; font-size:12px; color:#999;">A carregar quem recolheu...</div>`;
+                    getPickingInfo(b.id).then(info => {
+                        const el = document.getElementById(cardId);
+                        if(!el) return;
+                        if(info && info.pickedBy) {
+                            el.style.color = '#444';
+                            el.innerHTML = `<b>Picked by:</b> ${info.pickedBy}${info.pickedAt ? ` <span style="color:#666;">@ ${info.pickedAt}</span>` : ''}`;
+                        } else {
+                            el.style.color = '#aaa';
+                            el.textContent = 'Picking: sem registo';
+                        }
+                    });
+                }
+
+                h += `<div class="batch-card"><h4>${b.name}</h4><div style="display:flex; justify-content:space-between; font-size:12px; color:#666;"><span>${perc}% Done</span><span>Status: ${b.status}</span></div>${livePickHtml}${pickedHtml}<div class="progress-container"><div class="progress-bar" style="width:${perc}%"></div></div><div style="display:flex; gap:10px; margin-top:15px;"><button class="btn-small" style="background:var(--accent); flex:1;" onclick="openEditModal('${b.id}', false)">EDIT</button><button class="btn-small btn-delete" onclick="deleteBatch('${b.id}')">DEL</button></div></div>`;
             });
             col.innerHTML = h; container.appendChild(col);
         }
