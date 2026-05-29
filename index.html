@@ -90,6 +90,45 @@
           background: #fff5f5;
         }
 
+
+        /* PARTIAL RETURN BANNER */
+        .partial-return-banner {
+            display: none;
+            background: linear-gradient(135deg, #fff7ed, #fef3c7);
+            border: 3px solid #f59e0b;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 14px;
+            animation: partialPulse 2s ease-in-out infinite;
+        }
+        @keyframes partialPulse { 0%,100%{border-color:#f59e0b;} 50%{border-color:#ef4444;} }
+        .partial-return-banner .pbanner-title {
+            font-size: 18px; font-weight: 900; color: #92400e;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+        }
+        .partial-return-banner .pbanner-prev-label {
+            font-size: 12px; font-weight: 900; color: #92400e;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+        }
+        .partial-return-banner .pbanner-prods {
+            display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px;
+        }
+        .partial-return-banner .pbanner-prod-tag {
+            background: #fde68a; color: #78350f; border: 1px solid #fbbf24;
+            padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 700;
+        }
+        .partial-return-banner .pbanner-prod-tag.new {
+            background: #d1fae5; color: #065f46; border-color: #6ee7b7;
+        }
+        .partial-return-banner .pbanner-prod-tag.combined {
+            background: #ede9fe; color: #4c1d95; border-color: #c4b5fd;
+        }
+        .partial-return-banner .pbanner-summary {
+            font-size: 13px; color: #78350f; margin-top: 6px; font-weight: 700;
+        }
+        .partial-return-banner .pbanner-times {
+            font-size: 11px; color: #b45309; margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -426,6 +465,7 @@
             <div class="card">
                 <p style="font-size:22px;">ID: <b id="rv-id">-</b> | Track: <b id="rv-track">-</b></p>
                 <div id="rv-prods" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;"></div>
+                                <div id="rv-partial-banner" class="partial-return-banner"></div>
                 <div id="rv-pack-status" style="display:none; padding:14px 18px; border-radius:12px; font-size:16px; font-weight:700; margin-bottom:12px;"></div>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-return-complete" class="btn-mobile-op btn-op-orange" style="flex:1; display:none;" onclick="confirmOrder('RETURN')">✅ RETURN COMPLETO</button>
@@ -447,6 +487,7 @@
             <div class="card">
                 <p style="font-size:22px;">ID: <b id="fv-id">-</b> | Track: <b id="fv-track">-</b></p>
                 <div id="fv-prods" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;"></div>
+                                <div id="fv-partial-banner" class="partial-return-banner"></div>
                 <div id="fv-pack-status" style="display:none; padding:14px 18px; border-radius:12px; font-size:16px; font-weight:700; margin-bottom:12px;"></div>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-refund-complete" class="btn-mobile-op" style="flex:1; background:var(--refunds); display:none;" onclick="confirmOrder('REFUND')">✅ REFUND COMPLETO</button>
@@ -880,6 +921,10 @@ function handleScan(v, mode) {
         // Trigger packing comparison whenever scan data changes in RETURN/REFUND mode
         if (_isReturnMode(m) || _isRefundMode(m)) {
             updateReturnRefundStatus(m);
+            // Check for previous INCOMPLETE records when ID is set
+            if (scanData.id) {
+                checkAndShowPartialBanner(m);
+            }
         }
     }
     // ===== RETURN/REFUND vs PACKING COMPARISON =====
@@ -956,6 +1001,112 @@ function handleScan(v, mode) {
         return `<div style="margin-top:8px;"><span style="font-size:12px; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Embalado:</span><div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:2px;">${tags}</div></div>`;
     }
 
+
+    // ===== PARTIAL RETURN DETECTION =====
+    // Checks if this ID already has an INCOMPLETE return/refund record.
+    // Returns { found: bool, records: [], allPrevProds: string[], latestRec: obj|null }
+    async function checkExistingIncomplete(orderId, mode) {
+        if (!orderId) return { found: false, records: [], allPrevProds: [], latestRec: null };
+        try {
+            const snap = await db.ref('registos').orderByChild('id').equalTo(orderId).once('value');
+            const recs = snap.val();
+            if (!recs) return { found: false, records: [], allPrevProds: [], latestRec: null };
+
+            const isRet = _isReturnMode(mode);
+            const isRef = _isRefundMode(mode);
+            const matched = [];
+
+            Object.entries(recs).forEach(([k, r]) => {
+                if (!r) return;
+                const m = (r.mode || '').toString().toUpperCase();
+                if (isRet && !_isReturnMode(m)) return;
+                if (isRef && !_isRefundMode(m)) return;
+                if ((r.returnStatus || '').toUpperCase() !== 'INCOMPLETE') return;
+                matched.push({ key: k, ...r });
+            });
+
+            if (!matched.length) return { found: false, records: [], allPrevProds: [], latestRec: null };
+
+            // Sort by ts ascending so we accumulate in order
+            matched.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+            // Gather ALL previously scanned products across all INCOMPLETE records
+            const allPrevProds = [];
+            matched.forEach(r => {
+                const prods = (r.prods || '').split(' | ').map(p => p.trim()).filter(Boolean);
+                prods.forEach(p => { if(p && p !== 'No Items') allPrevProds.push(p); });
+            });
+
+            const latestRec = matched[matched.length - 1];
+            return { found: true, records: matched, allPrevProds, latestRec };
+        } catch(e) {
+            console.warn('checkExistingIncomplete error', e);
+            return { found: false, records: [], allPrevProds: [], latestRec: null };
+        }
+    }
+
+    // Render partial return banner and update scanData.prevIncompleteProds
+    async function checkAndShowPartialBanner(mode) {
+        const isReturn = _isReturnMode(mode);
+        const bannerId = isReturn ? 'rv-partial-banner' : 'fv-partial-banner';
+        const banner = document.getElementById(bannerId);
+        if (!banner) return;
+
+        if (!scanData.id) {
+            banner.style.display = 'none';
+            scanData._prevIncompleteProds = [];
+            return;
+        }
+
+        const result = await checkExistingIncomplete(scanData.id, mode);
+
+        if (!result.found) {
+            banner.style.display = 'none';
+            scanData._prevIncompleteProds = [];
+            return;
+        }
+
+        // Store previous prods so confirmOrder/confirmOrderIncomplete can include them
+        scanData._prevIncompleteProds = result.allPrevProds || [];
+
+        // Current session prods (newly scanned now)
+        const currentProds = (scanData.prods || []).slice();
+
+        // Combined: prev + new (deduplicated display, but keep counts)
+        // We'll show them separately: "já picados" + "novos"
+        const prevProdsHtml = result.allPrevProds.length
+            ? result.allPrevProds.map(p => `<span class="pbanner-prod-tag">${_fmt(p)}</span>`).join('')
+            : '<span style="color:#b45309; font-size:12px;">Nenhum produto guardado</span>';
+
+        const newProdsHtml = currentProds.length
+            ? currentProds.map(p => `<span class="pbanner-prod-tag new">${_fmt(p)}</span>`).join('')
+            : '<span style="color:#065f46; font-size:12px;">Nenhum produto novo ainda</span>';
+
+        // Combined count for packing check
+        const allCombined = [...result.allPrevProds, ...currentProds];
+        const combinedHtml = allCombined.length
+            ? allCombined.map(p => `<span class="pbanner-prod-tag combined">${_fmt(p)}</span>`).join('')
+            : '';
+
+        const nRecs = result.records.length;
+        const latestTime = result.latestRec ? (_fmt(result.latestRec.endTime || result.latestRec.time) + ' ' + _fmt(result.latestRec.dateClean)).trim() : '';
+        const latestUser = result.latestRec ? _fmt(result.latestRec.user) : '';
+
+        banner.style.display = 'block';
+        banner.innerHTML = `
+            <div class="pbanner-title">⚠️ JÁ PICADO COMO INCOMPLETO (${nRecs}x)</div>
+            <div class="pbanner-prev-label">🗂️ Produtos de picagem(ns) anterior(es):</div>
+            <div class="pbanner-prods">${prevProdsHtml}</div>
+            <div class="pbanner-prev-label" style="margin-top:8px;">🆕 Produtos picados agora (nova sessão):</div>
+            <div class="pbanner-prods">${newProdsHtml}</div>
+            ${allCombined.length ? `<div class="pbanner-prev-label" style="margin-top:8px;">🔗 Total combinado (anterior + novo):</div><div class="pbanner-prods">${combinedHtml}</div>` : ''}
+            <div class="pbanner-times">Último registo: ${latestUser}${latestTime ? ' às ' + latestTime : ''}</div>
+            <div class="pbanner-summary">ℹ️ Ao fechar, os produtos anteriores e os novos ficam todos no histórico.</div>
+        `;
+    }
+    // ===== END PARTIAL RETURN DETECTION =====
+
+
     // Called when ID or products change in RETURN/REFUND mode — updates status banner + buttons
     async function updateReturnRefundStatus(mode) {
         const m = (mode || currentMode || '').toString().toUpperCase();
@@ -969,6 +1120,8 @@ function handleScan(v, mode) {
         if (!scanData.id) {
             if (statusEl) statusEl.style.display = 'none';
             if (btnIncomplete) btnIncomplete.style.display = 'none';
+            const _bannerClear = document.getElementById(isReturn ? 'rv-partial-banner' : 'fv-partial-banner');
+            if(_bannerClear) _bannerClear.style.display = 'none';
             return;
         }
 
@@ -1036,12 +1189,16 @@ function handleScan(v, mode) {
         const endTs = Date.now();
         try {
             const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
+            const _prevIncProds = (scanData._prevIncompleteProds || []);
+            const _allCombinedProds = [..._prevIncProds, ...scanData.prods];
             await db.ref('registos').push({
                 id: scanData.id,
                 track: allTracks[0],
                 tracks: allTracks.join(' | '),
                 volumes: allTracks.length,
                 prods: scanData.prods.join(' | ') || 'No Items',
+                prevProds: _prevIncProds.join(' | ') || '',
+                allProds: _allCombinedProds.join(' | ') || '',
                 mode: m,
                 returnStatus: 'INCOMPLETE',
                 batch: 'GENERAL',
@@ -1120,6 +1277,9 @@ function handleScan(v, mode) {
 
             const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
             const returnStatusField = (_isReturnMode(m) || _isRefundMode(m)) ? { returnStatus: 'COMPLETE' } : {};
+            const _prevProdsForComplete = ((_isReturnMode(m) || _isRefundMode(m)) && scanData._prevIncompleteProds && scanData._prevIncompleteProds.length)
+                ? { prevProds: scanData._prevIncompleteProds.join(' | '), allProds: [...(scanData._prevIncompleteProds), ...scanData.prods].join(' | ') }
+                : {};
             await db.ref('registos').push({
                 id: scanData.id,
                 track: allTracks[0],
@@ -1128,6 +1288,7 @@ function handleScan(v, mode) {
                 prods: scanData.prods.join(' | ') || 'No Items',
                 mode: m,
                 ...returnStatusField,
+                ..._prevProdsForComplete,
                 batch: bId || 'GENERAL',
                 user: currentUser.email.split('@')[0].toUpperCase(),
                 startTime: scanData.startTime || endTime,
@@ -1167,6 +1328,8 @@ function handleScan(v, mode) {
         // Clear return/refund status banners
         ['rv-pack-status', 'fv-pack-status'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         ['btn-return-incomplete', 'btn-refund-incomplete', 'btn-return-complete', 'btn-refund-complete'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+        ['rv-partial-banner', 'fv-partial-banner'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+        scanData._prevIncompleteProds = [];
         refreshConfirmBtn(); 
         const inp = getActiveScanInput(); if(inp) { inp.value = ""; inp.focus(); }
     }
@@ -2331,7 +2494,7 @@ function updateDashboardStats(all, fD, prepackCount) {
                 const dt = r.DateTime || _dtKey(dc, tm);
                 const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
 
-                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", returnStatus: r.returnStatus || 'COMPLETE', ts, dt });
+                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", returnStatus: r.returnStatus || 'COMPLETE', prevProds: r.prevProds || '', ts, dt });
             });
 
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
@@ -2339,13 +2502,15 @@ function updateDashboardStats(all, fD, prepackCount) {
             tbody.innerHTML = rows.map(r => {
                 const stColor = r.returnStatus === 'INCOMPLETE' ? '#f59e0b' : '#28a745';
                 const stLabel = r.returnStatus === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : '✅ COMPLETO';
+                const hasPrev = r.prevProds && r.prevProds !== '';
+                const prevBadge = hasPrev ? `<span title="Fechado com produtos de picagem anterior" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:900;margin-left:4px;">+PARCIAL</span>` : '';
                 return `
 <tr>
   <td>${_fmt(r.tm)}</td>
   <td>${_fmt(r.user)}</td>
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
-  <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span></td>
+  <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span>${prevBadge}</td>
   <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
 </tr>`;
             }).join('');
@@ -2378,7 +2543,7 @@ function updateDashboardStats(all, fD, prepackCount) {
                 const dt = r.DateTime || _dtKey(dc, tm);
                 const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
 
-                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", returnStatus: r.returnStatus || 'COMPLETE', ts, dt });
+                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", returnStatus: r.returnStatus || 'COMPLETE', prevProds: r.prevProds || '', ts, dt });
             });
 
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
@@ -2386,13 +2551,15 @@ function updateDashboardStats(all, fD, prepackCount) {
             tbody.innerHTML = rows.map(r => {
                 const stColor = r.returnStatus === 'INCOMPLETE' ? '#f59e0b' : '#28a745';
                 const stLabel = r.returnStatus === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : '✅ COMPLETO';
+                const hasPrev = r.prevProds && r.prevProds !== '';
+                const prevBadge = hasPrev ? `<span title="Fechado com produtos de picagem anterior" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:900;margin-left:4px;">+PARCIAL</span>` : '';
                 return `
 <tr>
   <td>${_fmt(r.tm)}</td>
   <td>${_fmt(r.user)}</td>
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
-  <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span></td>
+  <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span>${prevBadge}</td>
   <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
 </tr>`;
             }).join('');
