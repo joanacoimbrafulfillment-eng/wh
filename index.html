@@ -426,11 +426,15 @@
             <div class="card">
                 <p style="font-size:22px;">ID: <b id="rv-id">-</b> | Track: <b id="rv-track">-</b></p>
                 <div id="rv-prods" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;"></div>
-                <button class="btn-mobile-op btn-op-orange" onclick="confirmOrder('RETURN')">SAVE RETURN</button>
+                <div id="rv-pack-status" style="display:none; padding:14px 18px; border-radius:12px; font-size:16px; font-weight:700; margin-bottom:12px;"></div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button id="btn-return-complete" class="btn-mobile-op btn-op-orange" style="flex:1; display:none;" onclick="confirmOrder('RETURN')">✅ RETURN COMPLETO</button>
+                    <button id="btn-return-incomplete" class="btn-mobile-op" style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('RETURN')">⚠️ RETURN INCOMPLETO</button>
+                </div>
             </div>
             <div class="card">
                 <h3>Recent Returns</h3>
-                <div class="scroll-area"><table id="recent-returns-table"><thead><tr><th>Time</th><th>User</th><th>ID</th><th>Items</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+                <div class="scroll-area"><table id="recent-returns-table"><thead><tr><th>Time</th><th>User</th><th>ID</th><th>Items</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
             </div>
         </div>
 
@@ -443,11 +447,15 @@
             <div class="card">
                 <p style="font-size:22px;">ID: <b id="fv-id">-</b> | Track: <b id="fv-track">-</b></p>
                 <div id="fv-prods" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;"></div>
-                <button class="btn-mobile-op" style="background:var(--refunds);" onclick="confirmOrder('REFUND')">SAVE REFUND</button>
+                <div id="fv-pack-status" style="display:none; padding:14px 18px; border-radius:12px; font-size:16px; font-weight:700; margin-bottom:12px;"></div>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <button id="btn-refund-complete" class="btn-mobile-op" style="flex:1; background:var(--refunds); display:none;" onclick="confirmOrder('REFUND')">✅ REFUND COMPLETO</button>
+                    <button id="btn-refund-incomplete" class="btn-mobile-op" style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('REFUND')">⚠️ REFUND INCOMPLETO</button>
+                </div>
             </div>
             <div class="card">
                 <h3>Recent Refunds</h3>
-                <div class="scroll-area"><table id="recent-refunds-table"><thead><tr><th>Time</th><th>User</th><th>ID</th><th>Items</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+                <div class="scroll-area"><table id="recent-refunds-table"><thead><tr><th>Time</th><th>User</th><th>ID</th><th>Items</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
             </div>
         </div>
 
@@ -869,14 +877,210 @@ function handleScan(v, mode) {
         }
         updateDisplay(m);
         refreshConfirmBtn();
+        // Trigger packing comparison whenever scan data changes in RETURN/REFUND mode
+        if (_isReturnMode(m) || _isRefundMode(m)) {
+            updateReturnRefundStatus(m);
+        }
     }
+    // ===== RETURN/REFUND vs PACKING COMPARISON =====
+    // Products that are EXCLUDED from return/refund comparison (warranties, etc.)
+    function _isExcludedFromReturn(prodName) {
+        const n = (prodName || '').toString().toUpperCase().trim();
+        return n === 'WARRANTY PT' || n === 'WARRANTY ES' ||
+               n.startsWith('WARRANTY PT ') || n.startsWith('WARRANTY ES ');
+    }
+
+    // Returns { found: bool, match: bool, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] }
+    async function checkReturnVsPacking(orderId, scannedProds) {
+        if (!orderId) return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
+        try {
+            const snap = await db.ref('registos').orderByChild('id').equalTo(orderId).once('value');
+            const recs = snap.val();
+            if (!recs) return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
+
+            // Find the latest PACKING record for this ID
+            let packRec = null;
+            Object.values(recs).forEach(r => {
+                if (!r || (r.mode || '').toString().toUpperCase() !== 'PACKING') return;
+                if (!packRec || (r.ts || 0) > (packRec.ts || 0)) packRec = r;
+            });
+
+            if (!packRec) return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
+
+            // All packed products (for display)
+            const packedRaw = (packRec.prods || '').split(' | ').map(p => p.trim().toUpperCase()).filter(Boolean);
+
+            // Relevant packed products (excluding warranties — these don't need to be returned)
+            const packedRelevant = packedRaw.filter(p => !_isExcludedFromReturn(p));
+
+            // Scanned products (excluding warranties too)
+            const scannedNorm = (scannedProds || []).map(p => p.trim().toUpperCase()).filter(p => p && !_isExcludedFromReturn(p));
+
+            // Build count maps on RELEVANT products only
+            const countPacked = {};
+            packedRelevant.forEach(p => { countPacked[p] = (countPacked[p] || 0) + 1; });
+            const countScanned = {};
+            scannedNorm.forEach(p => { countScanned[p] = (countScanned[p] || 0) + 1; });
+
+            // Compare
+            const allKeys = new Set([...Object.keys(countPacked), ...Object.keys(countScanned)]);
+            const missingProds = []; // in packed but not (fully) returned
+            const extraProds = [];   // returned but not in packed
+
+            allKeys.forEach(k => {
+                const need = countPacked[k] || 0;
+                const got = countScanned[k] || 0;
+                if (got < need) missingProds.push(`${k} (${got}/${need})`);
+                if (got > need) extraProds.push(`${k} (extra: ${got - need})`);
+            });
+
+            const match = missingProds.length === 0 && extraProds.length === 0;
+            return { found: true, match, packedProds: packedRaw, packedRelevant, missingProds, extraProds };
+        } catch (e) {
+            console.warn('checkReturnVsPacking error', e);
+            return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
+        }
+    }
+
+    // Build packed products display HTML (all products, warranties greyed out)
+    function _renderPackedProdsHtml(packedProds) {
+        if (!packedProds || packedProds.length === 0) return '';
+        const tags = packedProds.map(p => {
+            const excluded = _isExcludedFromReturn(p);
+            const bg = excluded ? '#e5e7eb' : '#dbeafe';
+            const color = excluded ? '#9ca3af' : '#1e40af';
+            const border = excluded ? '#d1d5db' : '#93c5fd';
+            const note = excluded ? ' <span style="font-size:10px; opacity:0.7">(excluído)</span>' : '';
+            return `<span style="display:inline-block; background:${bg}; color:${color}; border:1px solid ${border}; padding:4px 10px; border-radius:6px; font-size:13px; font-weight:700; margin:3px;">${p}${note}</span>`;
+        }).join('');
+        return `<div style="margin-top:8px;"><span style="font-size:12px; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Embalado:</span><div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:2px;">${tags}</div></div>`;
+    }
+
+    // Called when ID or products change in RETURN/REFUND mode — updates status banner + buttons
+    async function updateReturnRefundStatus(mode) {
+        const m = (mode || currentMode || '').toString().toUpperCase();
+        const isReturn = _isReturnMode(m);
+        const isRefund = _isRefundMode(m);
+        if (!isReturn && !isRefund) return;
+
+        const statusEl = document.getElementById(isReturn ? 'rv-pack-status' : 'fv-pack-status');
+        const btnIncomplete = document.getElementById(isReturn ? 'btn-return-incomplete' : 'btn-refund-incomplete');
+
+        if (!scanData.id) {
+            if (statusEl) statusEl.style.display = 'none';
+            if (btnIncomplete) btnIncomplete.style.display = 'none';
+            return;
+        }
+
+        // ✅ Show INCOMPLETO button IMMEDIATELY when ID is scanned — always visible from this point
+        if (btnIncomplete) btnIncomplete.style.display = 'block';
+
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.background = '#f1f5f9';
+            statusEl.style.border = '1px solid #e2e8f0';
+            statusEl.style.color = '#64748b';
+            statusEl.innerHTML = '🔍 A verificar packing...';
+        }
+
+        const check = await checkReturnVsPacking(scanData.id, scanData.prods || []);
+
+        if (!check.found) {
+            // ID not found in packing — allow both COMPLETE and INCOMPLETE
+            const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
+            if (btnComplete) btnComplete.style.display = 'block';
+            if (statusEl) {
+                statusEl.style.background = '#f0fdf4';
+                statusEl.style.color = '#166534';
+                statusEl.style.border = '1px solid #bbf7d0';
+                statusEl.innerHTML = `ℹ️ ID não encontrado em Packing — COMPLETO ou INCOMPLETO disponíveis.`;
+            }
+            return;
+        }
+
+        const packedHtml = _renderPackedProdsHtml(check.packedProds);
+
+        if (check.match) {
+            // All relevant products match — show COMPLETE button
+            const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
+            if (btnComplete) btnComplete.style.display = 'block';
+            if (statusEl) {
+                statusEl.style.background = '#f0fdf4';
+                statusEl.style.color = '#166534';
+                statusEl.style.border = '1px solid #bbf7d0';
+                const relevantCount = check.packedRelevant.length;
+                statusEl.innerHTML = `✅ Produtos coincidem com packing (${relevantCount} relevante${relevantCount !== 1 ? 's' : ''}).${packedHtml}`;
+            }
+        } else {
+            // Mismatch — highlight that COMPLETE is blocked, INCOMPLETE is the right option
+            let details = '';
+            if (check.missingProds.length) details += `<br>🔴 <b>Faltam:</b> ${check.missingProds.join(', ')}`;
+            if (check.extraProds.length) details += `<br>🟡 <b>Extra:</b> ${check.extraProds.join(', ')}`;
+            const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
+            if (btnComplete) btnComplete.style.display = 'none';
+            if (statusEl) {
+                statusEl.style.background = '#fff7ed';
+                statusEl.style.color = '#9a3412';
+                statusEl.style.border = '1px solid #fed7aa';
+                statusEl.innerHTML = `⚠️ Produtos <b>não coincidem</b> com o packing — usa ⚠️ INCOMPLETO.${details}${packedHtml}`;
+            }
+        }
+    }
+
+    // Save return/refund as INCOMPLETE
+    async function confirmOrderIncomplete(mode) {
+        const m = mode || currentMode;
+        if (!scanData.id || !scanData.track) return alert("Faltam dados (ID e tracking)!");
+        const workDc = _nowDateClean();
+        const endTime = _nowTime();
+        const endTs = Date.now();
+        try {
+            const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
+            await db.ref('registos').push({
+                id: scanData.id,
+                track: allTracks[0],
+                tracks: allTracks.join(' | '),
+                volumes: allTracks.length,
+                prods: scanData.prods.join(' | ') || 'No Items',
+                mode: m,
+                returnStatus: 'INCOMPLETE',
+                batch: 'GENERAL',
+                user: currentUser.email.split('@')[0].toUpperCase(),
+                startTime: scanData.startTime || endTime,
+                endTime: endTime,
+                startTs: (typeof scanData.startTs === 'number') ? scanData.startTs : null,
+                endTs: endTs,
+                time: endTime,
+                dateClean: workDc,
+                DateTime: _dtKey(workDc, endTime),
+                workDateClean: workDc,
+                workDateTime: _dtKey(workDc, endTime),
+                ts: Date.now()
+            });
+            resetScan();
+        } catch (e) {
+            alert('Erro ao gravar.');
+        }
+    }
+    // ============================================================
+
     async function confirmOrder(mode) {
         const m = mode || currentMode;
         const bId = document.getElementById('wh-batch-select').value;
         if(!scanData.id || !scanData.track) return alert("Faltam dados!");
 
-        
-        // ✅ PACKING: block "ID COMPLETE" until all expected products/quantities are scanned
+        // ✅ RETURN/REFUND: verify products match packed products before allowing COMPLETE
+        if (_isReturnMode(m) || _isRefundMode(m)) {
+            const check = await checkReturnVsPacking(scanData.id, scanData.prods || []);
+            if (check.found && !check.match) {
+                let msg = `Não é possível gravar como COMPLETO — os produtos picados não coincidem com o packing.\n`;
+                if (check.missingProds.length) msg += `\nFaltam: ${check.missingProds.join(', ')}`;
+                if (check.extraProds.length) msg += `\nExtra: ${check.extraProds.join(', ')}`;
+                msg += `\n\nSe os produtos não voltaram todos, usa o botão ⚠️ INCOMPLETO.`;
+                return alert(msg);
+            }
+        }
+
         if(m === 'PACKING'){
             const chk = packingMeetsExpected();
             if(!chk.ok){
@@ -915,6 +1119,7 @@ function handleScan(v, mode) {
             }
 
             const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
+            const returnStatusField = (_isReturnMode(m) || _isRefundMode(m)) ? { returnStatus: 'COMPLETE' } : {};
             await db.ref('registos').push({
                 id: scanData.id,
                 track: allTracks[0],
@@ -922,6 +1127,7 @@ function handleScan(v, mode) {
                 volumes: allTracks.length,
                 prods: scanData.prods.join(' | ') || 'No Items',
                 mode: m,
+                ...returnStatusField,
                 batch: bId || 'GENERAL',
                 user: currentUser.email.split('@')[0].toUpperCase(),
                 startTime: scanData.startTime || endTime,
@@ -958,6 +1164,9 @@ function handleScan(v, mode) {
         document.getElementById('packing-info-display').style.display = 'none'; 
         document.getElementById('meta-cancel-banner').style.display = 'none'; 
         document.getElementById('btn-confirm-order').style.display = 'none';
+        // Clear return/refund status banners
+        ['rv-pack-status', 'fv-pack-status'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+        ['btn-return-incomplete', 'btn-refund-incomplete', 'btn-return-complete', 'btn-refund-complete'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         refreshConfirmBtn(); 
         const inp = getActiveScanInput(); if(inp) { inp.value = ""; inp.focus(); }
     }
@@ -2122,19 +2331,24 @@ function updateDashboardStats(all, fD, prepackCount) {
                 const dt = r.DateTime || _dtKey(dc, tm);
                 const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
 
-                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", ts, dt });
+                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", returnStatus: r.returnStatus || 'COMPLETE', ts, dt });
             });
 
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
 
-            tbody.innerHTML = rows.map(r => `
+            tbody.innerHTML = rows.map(r => {
+                const stColor = r.returnStatus === 'INCOMPLETE' ? '#f59e0b' : '#28a745';
+                const stLabel = r.returnStatus === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : '✅ COMPLETO';
+                return `
 <tr>
   <td>${_fmt(r.tm)}</td>
   <td>${_fmt(r.user)}</td>
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
+  <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span></td>
   <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
-</tr>`).join('');
+</tr>`;
+            }).join('');
         };
 
         __returnsTodayRef.on('value', __returnsTodayCb);
@@ -2164,19 +2378,24 @@ function updateDashboardStats(all, fD, prepackCount) {
                 const dt = r.DateTime || _dtKey(dc, tm);
                 const ts = r.ts || (dt ? Date.parse(dt.replace(' ', 'T')) : 0) || 0;
 
-                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", ts, dt });
+                rows.push({ k, tm, user: r.user || "", id: r.id || "", items: r.prods || "", returnStatus: r.returnStatus || 'COMPLETE', ts, dt });
             });
 
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
 
-            tbody.innerHTML = rows.map(r => `
+            tbody.innerHTML = rows.map(r => {
+                const stColor = r.returnStatus === 'INCOMPLETE' ? '#f59e0b' : '#28a745';
+                const stLabel = r.returnStatus === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : '✅ COMPLETO';
+                return `
 <tr>
   <td>${_fmt(r.tm)}</td>
   <td>${_fmt(r.user)}</td>
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
+  <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span></td>
   <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
-</tr>`).join('');
+</tr>`;
+            }).join('');
         };
 
         __refundsTodayRef.on('value', __refundsTodayCb);
