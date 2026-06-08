@@ -552,6 +552,79 @@
     function _isReturnMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'RETURN' || m === 'RETURNS' || m === 'RETURNED'; }
     function _isRefundMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'REFUND' || m === 'REFUNDS' || m === 'REFUNDED'; }
 
+    // --- GOOGLE SHEETS AUTO SYNC (RETURNS / REFUNDS from WH) ---
+    // This WH file records Returns/Refunds directly in Firebase. The OFF file can see
+    // those records later, but it does not execute the code that created them.
+    // Therefore the Sheets sync must also exist here in WH.
+    window.WH_SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzr8b1fDe28HCRXjQHJK8QekR3b1uMp2FXsJS09cGtw4nd53wpQJZeC3KoRgdGjKXJG/exec';
+
+    function whSheetsConfigured() {
+        return !!(window.WH_SHEETS_WEB_APP_URL && String(window.WH_SHEETS_WEB_APP_URL).trim());
+    }
+
+    function whSheetsAggregateProducts(prodsValue) {
+        const list = Array.isArray(prodsValue)
+            ? prodsValue
+            : String(prodsValue || '').split('|');
+        const counts = {};
+        list.map(x => String(x || '').trim()).filter(Boolean).forEach(p => {
+            if(!p || p === 'No Items') return;
+            const k = p.toUpperCase();
+            counts[k] = (counts[k] || 0) + 1;
+        });
+        return Object.entries(counts).map(([product, qty]) => ({ product, qty }));
+    }
+
+    async function whSheetsPost(payload) {
+        if(!whSheetsConfigured()) return { ok:false, skipped:true, reason:'No WH_SHEETS_WEB_APP_URL' };
+        try {
+            await fetch(window.WH_SHEETS_WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            return { ok:true };
+        } catch(err) {
+            console.warn('Google Sheets sync failed:', err);
+            return { ok:false, error: err };
+        }
+    }
+
+    async function whSheetsSendReturnRefundRecord(regKey, record) {
+        if(!record || !regKey) return;
+        const mode = record.mode || currentMode;
+        if(!_isReturnMode(mode) && !_isRefundMode(mode)) return;
+        const rows = whSheetsAggregateProducts(record.prods);
+        if(!rows.length) return;
+        const type = _isRefundMode(mode) ? 'refund' : 'return';
+        await whSheetsPost({
+            type: type,
+            source_key: 'WH_REG_' + regKey,
+            date: record.dateClean || record.workDateClean || _nowDateClean(),
+            rows: rows
+        });
+    }
+
+    async function whSheetsSendReturnRefundDelete(regKey, mode) {
+        if(!regKey) return;
+        const type = _isRefundMode(mode) ? 'refund_delete' : 'return_delete';
+        await whSheetsPost({
+            type: type,
+            source_key: 'WH_REG_' + regKey,
+            reason: 'Deleted in WH'
+        });
+    }
+
+    async function deleteReturnRefundRecord(regKey, mode) {
+        if(!regKey) return;
+        if(!confirm('Apagar este registo?')) return;
+        // Best effort: sync Sheets first, then remove from Firebase.
+        // If Sheets is temporarily unavailable, Firebase delete still happens so WH does not block.
+        try { await whSheetsSendReturnRefundDelete(regKey, mode); } catch(e) { console.warn(e); }
+        return db.ref('registos/' + regKey).remove();
+    }
+
     
 
     // Returns expected IDs excluding cancelled IDs
@@ -1191,7 +1264,7 @@ function handleScan(v, mode) {
             const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
             const _prevIncProds = (scanData._prevIncompleteProds || []);
             const _allCombinedProds = [..._prevIncProds, ...scanData.prods];
-            await db.ref('registos').push({
+            const returnRefundRecord = {
                 id: scanData.id,
                 track: allTracks[0],
                 tracks: allTracks.join(' | '),
@@ -1213,7 +1286,9 @@ function handleScan(v, mode) {
                 workDateClean: workDc,
                 workDateTime: _dtKey(workDc, endTime),
                 ts: Date.now()
-            });
+            };
+            const regRef = await db.ref('registos').push(returnRefundRecord);
+            await whSheetsSendReturnRefundRecord(regRef.key, returnRefundRecord);
             resetScan();
         } catch (e) {
             alert('Erro ao gravar.');
@@ -1280,7 +1355,7 @@ function handleScan(v, mode) {
             const _prevProdsForComplete = ((_isReturnMode(m) || _isRefundMode(m)) && scanData._prevIncompleteProds && scanData._prevIncompleteProds.length)
                 ? { prevProds: scanData._prevIncompleteProds.join(' | '), allProds: [...(scanData._prevIncompleteProds), ...scanData.prods].join(' | ') }
                 : {};
-            await db.ref('registos').push({
+            const recordPayload = {
                 id: scanData.id,
                 track: allTracks[0],
                 tracks: allTracks.join(' | '),
@@ -1306,7 +1381,9 @@ function handleScan(v, mode) {
                 workDateTime: _dtKey(workDc, endTime),
 
                 ts: Date.now()
-            });
+            };
+            const regRef = await db.ref('registos').push(recordPayload);
+            await whSheetsSendReturnRefundRecord(regRef.key, recordPayload);
 
             resetScan();
         } catch (e) {
@@ -2511,7 +2588,7 @@ function updateDashboardStats(all, fD, prepackCount) {
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
   <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span>${prevBadge}</td>
-  <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
+  <td><button class="btn-small btn-delete" onclick="deleteReturnRefundRecord('${r.k}', 'RETURN')">X</button></td>
 </tr>`;
             }).join('');
         };
@@ -2560,7 +2637,7 @@ function updateDashboardStats(all, fD, prepackCount) {
   <td>${_fmt(r.id)}</td>
   <td>${_fmt(r.items)}</td>
   <td><span style="background:${stColor}; color:white; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:900;">${stLabel}</span>${prevBadge}</td>
-  <td><button class="btn-small btn-delete" onclick="db.ref('registos/${r.k}').remove()">X</button></td>
+  <td><button class="btn-small btn-delete" onclick="deleteReturnRefundRecord('${r.k}', 'REFUND')">X</button></td>
 </tr>`;
             }).join('');
         };
