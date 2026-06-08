@@ -3055,6 +3055,104 @@ function updateDashboardStats(all, fD, prepackCount) {
     }, 250);
   });
 })();
+
+
+/* === SAVING NOTICE / DOUBLE-CLICK GUARD === */
+(function(){
+    if(window.__whSavingGuardInstalled) return;
+    window.__whSavingGuardInstalled = true;
+    window.__whSavingBusy = false;
+    window.__whSavingDisabledButtons = [];
+
+    function whEnsureSavingOverlay(){
+        var old = document.getElementById('__wh_saving_overlay');
+        if(old) return old;
+        var overlay = document.createElement('div');
+        overlay.id = '__wh_saving_overlay';
+        overlay.style.cssText = 'display:none; position:fixed; inset:0; z-index:2147483647; background:rgba(15,23,42,0.62); backdrop-filter:blur(2px); align-items:center; justify-content:center; padding:20px;';
+        overlay.innerHTML = '' +
+          '<div style="background:#fff; color:#0f172a; border-radius:22px; padding:28px 32px; width:min(92vw,460px); text-align:center; box-shadow:0 24px 70px rgba(0,0,0,0.35); border-top:8px solid #3498db;">' +
+            '<div style="font-size:44px; margin-bottom:10px;">⏳</div>' +
+            '<div id="__wh_saving_title" style="font-size:26px; font-weight:1000; margin-bottom:8px;">A ser gravado...</div>' +
+            '<div style="font-size:15px; color:#475569; font-weight:800; line-height:1.4;">Não carregues outra vez. Aguarda a confirmação.</div>' +
+          '</div>';
+        document.body.appendChild(overlay);
+        return overlay;
+    }
+
+    window.whShowSavingNotice = function(message){
+        var overlay = whEnsureSavingOverlay();
+        var title = document.getElementById('__wh_saving_title');
+        if(title) title.textContent = message || 'A ser gravado...';
+
+        window.__whSavingDisabledButtons = [];
+        try{
+            document.querySelectorAll('button').forEach(function(btn){
+                window.__whSavingDisabledButtons.push([btn, !!btn.disabled]);
+                btn.disabled = true;
+                btn.style.pointerEvents = 'none';
+                btn.dataset.whSavingOpacity = btn.style.opacity || '';
+                btn.style.opacity = '0.55';
+            });
+        }catch(e){}
+
+        overlay.style.display = 'flex';
+    };
+
+    window.whHideSavingNotice = function(){
+        var overlay = document.getElementById('__wh_saving_overlay');
+        if(overlay) overlay.style.display = 'none';
+        try{
+            (window.__whSavingDisabledButtons || []).forEach(function(pair){
+                var btn = pair[0];
+                var wasDisabled = pair[1];
+                if(!btn) return;
+                btn.disabled = wasDisabled;
+                btn.style.pointerEvents = '';
+                btn.style.opacity = btn.dataset.whSavingOpacity || '';
+                delete btn.dataset.whSavingOpacity;
+            });
+            window.__whSavingDisabledButtons = [];
+        }catch(e){}
+    };
+
+    function showAlreadySaving(){
+        if(typeof uiAlert === 'function') uiAlert('Já está a gravar. Aguarda uns segundos antes de carregar novamente.', {type:'info', duration:3000});
+        else alert('Já está a gravar. Aguarda uns segundos antes de carregar novamente.');
+    }
+
+    function wrapSaving(name, labelFn){
+        var original = window[name];
+        if(typeof original !== 'function' || original.__whSavingWrapped) return;
+        var wrapped = async function(){
+            if(window.__whSavingBusy){ showAlreadySaving(); return; }
+            window.__whSavingBusy = true;
+            var args = Array.prototype.slice.call(arguments);
+            var label = (typeof labelFn === 'function') ? labelFn.apply(this, args) : labelFn;
+            window.whShowSavingNotice(label || 'A ser gravado...');
+            try{
+                return await original.apply(this, args);
+            } finally {
+                window.__whSavingBusy = false;
+                window.whHideSavingNotice();
+            }
+        };
+        wrapped.__whSavingWrapped = true;
+        window[name] = wrapped;
+    }
+
+    function returnRefundLabel(mode){
+        var m = String(mode || (window.currentMode || '')).toUpperCase();
+        if(m === 'REFUND' || m === 'REFUNDS' || m === 'REFUNDED') return 'A gravar refund...';
+        if(m === 'RETURN' || m === 'RETURNS' || m === 'RETURNED') return 'A gravar return...';
+        return 'A gravar...';
+    }
+    wrapSaving('confirmOrder', returnRefundLabel);
+    wrapSaving('confirmOrderIncomplete', returnRefundLabel);
+    wrapSaving('deleteReturnRefundRecord', 'A apagar registo...');
+})();
+/* === END SAVING NOTICE / DOUBLE-CLICK GUARD === */
+
 </script>
 
 </body>
