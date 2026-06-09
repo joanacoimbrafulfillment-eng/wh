@@ -492,6 +492,8 @@
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-refund-complete" class="btn-mobile-op" style="flex:1; background:var(--refunds); display:none;" onclick="confirmOrder('REFUND')">✅ REFUND COMPLETO</button>
                     <button id="btn-refund-incomplete" class="btn-mobile-op" style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('REFUND')">⚠️ REFUND INCOMPLETO</button>
+                    <button id="btn-refund-no-product" class="btn-mobile-op" style="flex:1 1 100%; background:#475569; display:none;" onclick="confirmRefundNoProductDamaged()">🚫 SEM PRODUTO/PRODUTO DANIFICADO</button>
+                    <button id="btn-refund-swipe" class="btn-mobile-op" style="flex:1 1 100%; background:#0ea5e9; display:none;" onclick="confirmRefundSwipe()">SWIPE</button>
                 </div>
             </div>
             <div class="card">
@@ -591,10 +593,26 @@
         }
     }
 
+    function whSheetsShouldSkipReturnRefundSync(record) {
+        if(!record) return false;
+        const mode = record.mode || currentMode;
+        if(!_isRefundMode(mode)) return false;
+        const status = String(record.returnStatus || '').trim().toUpperCase();
+        const reason = String(record.refundReason || '').trim().toUpperCase();
+        // Refunds closed with these special operator buttons stay only in Firebase/history.
+        // They must NOT be sent to Google Sheets RETURNS_REFUNDS.
+        return status === 'SWIPE' || status === 'NO_PRODUCT_DAMAGED' ||
+               reason === 'SWIPE' || reason === 'SEM PRODUTO/PRODUTO DANIFICADO';
+    }
+
     async function whSheetsSendReturnRefundRecord(regKey, record) {
         if(!record || !regKey) return;
         const mode = record.mode || currentMode;
         if(!_isReturnMode(mode) && !_isRefundMode(mode)) return;
+        if(whSheetsShouldSkipReturnRefundSync(record)) {
+            console.log('Google Sheets sync skipped for special refund:', record.returnStatus || record.refundReason || regKey);
+            return { ok:false, skipped:true, reason:'Special refund not synced to Sheets' };
+        }
         const rows = whSheetsAggregateProducts(record.prods);
         if(!rows.length) return;
         const type = _isRefundMode(mode) ? 'refund' : 'return';
@@ -918,7 +936,7 @@ function getActiveScanInput(){
     function packingMeetsExpected(){
         // If there is no expected content recorded, do NOT block (fails-open).
         if(!activeBatchData || !activeBatchData.order_details || !scanData.id) {
-            return { ok: true, missing: [] };
+            return { ok: true, missing: [], extra: [] };
         }
 
         const det = activeBatchData.order_details[scanData.id] || {};
@@ -926,7 +944,7 @@ function getActiveScanInput(){
         const expKeys = Object.keys(expected);
 
         if(expKeys.length === 0) {
-            return { ok: true, missing: [], expected: expected };
+            return { ok: true, missing: [], extra: [], expected: expected };
         }
 
         const scanned = countScannedProds(scanData.prods);
@@ -938,7 +956,16 @@ function getActiveScanInput(){
             if(got < need) missing.push(`${prod} (${got}/${need})`);
         });
 
-        return { ok: missing.length === 0, missing: missing, expected: expected };
+        // Extra products must block PACKING completion too.
+        // This catches both products that are not expected for the ID and quantities above the expected qty.
+        const extra = [];
+        Object.keys(scanned).forEach(prod => {
+            const got = scanned[prod] || 0;
+            const need = expected[prod] || 0;
+            if(got > need) extra.push(`${prod} (${got}/${need})`);
+        });
+
+        return { ok: missing.length === 0 && extra.length === 0, missing: missing, extra: extra, expected: expected, scanned: scanned };
     }
 
     function refreshConfirmBtn(){
@@ -951,7 +978,10 @@ function getActiveScanInput(){
                 const requiredVols = (activeBatchData && activeBatchData.order_volumes && activeBatchData.order_volumes[scanData.id]) || 1;
                 const gotTracks = (scanData.tracks && scanData.tracks.length) || (scanData.track ? 1 : 0);
                 const volOk = gotTracks >= requiredVols;
-                btn.style.display = (chk.ok && volOk) ? 'block' : 'none';
+                // Keep the button visible when there are only EXTRA products so the operator gets a clear alert on click.
+                // Missing products or missing volumes still hide the button as before.
+                const missingOk = !(chk.missing && chk.missing.length);
+                btn.style.display = (missingOk && volOk) ? 'block' : 'none';
                 // Update volumes indicator
                 const volEl = document.getElementById('v-volumes-status');
                 if(volEl){
@@ -1069,6 +1099,67 @@ function handleScan(v, mode) {
         return [...prev, ...current];
     }
 
+
+    function hasCurrentReturnRefundProducts() {
+        const current = (scanData && Array.isArray(scanData.prods)) ? scanData.prods : [];
+        return current.some(p => String(p || '').trim() && String(p || '').trim() !== 'No Items');
+    }
+
+    function buildReturnRefundBlockMessage(check, closeType) {
+        let msg = `Não é possível fechar este ${closeType || 'registo'}.`;
+        if (check && check.extraProds && check.extraProds.length) {
+            msg += `
+
+Produtos DIFERENTES / EXTRA vs Packing:
+- ${check.extraProds.join('\n- ')}`;
+            msg += `
+
+Apaga o produto errado no botão × e pica apenas produtos que existiam no Packing.`;
+        }
+        if (check && check.missingProds && check.missingProds.length) {
+            msg += `
+
+Faltam produtos do Packing:
+- ${check.missingProds.join('\n- ')}`;
+        }
+        return msg;
+    }
+
+    async function validateReturnRefundBeforeClose(mode, status) {
+        const m = mode || currentMode;
+        const st = (status || '').toString().toUpperCase();
+
+        if (!scanData.id || !scanData.track) {
+            return { ok: false, message: 'Faltam dados (ID e tracking)!' };
+        }
+
+        // Returns/Refunds must never be closed without a product scanned in the CURRENT session.
+        if (!hasCurrentReturnRefundProducts()) {
+            return { ok: false, message: 'Tens de picar pelo menos 1 produto antes de fechar como COMPLETO ou INCOMPLETO.' };
+        }
+
+        await refreshPreviousIncompleteProducts(m);
+        const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
+
+        // If there is no PACKING history, allow closing (as requested), as long as a product was scanned.
+        if (!check.found) return { ok: true, check };
+
+        // If product is not in PACKING, or qty is above PACKING, block both COMPLETE and INCOMPLETE.
+        if (check.extraProds && check.extraProds.length) {
+            return { ok: false, check, message: buildReturnRefundBlockMessage(check, st === 'COMPLETE' ? 'como COMPLETO' : 'como INCOMPLETO') };
+        }
+
+        // COMPLETE needs an exact match with PACKING (missing products must be closed as INCOMPLETE instead).
+        if (st === 'COMPLETE' && check.missingProds && check.missingProds.length) {
+            let msg = buildReturnRefundBlockMessage(check, 'como COMPLETO');
+            msg += '\n\nSe os produtos não voltaram todos, fecha como INCOMPLETO.';
+            return { ok: false, check, message: msg };
+        }
+
+        // INCOMPLETE is allowed when products are valid but still missing vs PACKING.
+        return { ok: true, check };
+    }
+
     async function refreshPreviousIncompleteProducts(mode) {
         if (!scanData || !scanData.id) {
             if (scanData) scanData._prevIncompleteProds = [];
@@ -1082,15 +1173,22 @@ function handleScan(v, mode) {
     // Build packed products display HTML (all products, warranties greyed out)
     function _renderPackedProdsHtml(packedProds) {
         if (!packedProds || packedProds.length === 0) return '';
+        const relevantCount = packedProds.filter(p => !_isExcludedFromReturn(p)).length;
         const tags = packedProds.map(p => {
-            const excluded = _isExcludedFromReturn(p);
-            const bg = excluded ? '#e5e7eb' : '#dbeafe';
-            const color = excluded ? '#9ca3af' : '#1e40af';
-            const border = excluded ? '#d1d5db' : '#93c5fd';
-            const note = excluded ? ' <span style="font-size:10px; opacity:0.7">(excluído)</span>' : '';
-            return `<span style="display:inline-block; background:${bg}; color:${color}; border:1px solid ${border}; padding:4px 10px; border-radius:6px; font-size:13px; font-weight:700; margin:3px;">${p}${note}</span>`;
+            const clean = _fmt(p);
+            const excluded = _isExcludedFromReturn(clean);
+            const bg = excluded ? '#f1f5f9' : '#dbeafe';
+            const color = excluded ? '#64748b' : '#1e40af';
+            const border = excluded ? '#cbd5e1' : '#60a5fa';
+            const note = excluded ? '<div style="font-size:11px; opacity:0.8; margin-top:2px;">excluído da comparação</div>' : '';
+            return `<div style="background:${bg}; color:${color}; border:1px solid ${border}; padding:10px 12px; border-radius:10px; font-size:15px; font-weight:900; margin:4px 0; line-height:1.25; word-break:break-word;">${clean}${note}</div>`;
         }).join('');
-        return `<div style="margin-top:8px;"><span style="font-size:12px; font-weight:900; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Embalado:</span><div style="margin-top:5px; display:flex; flex-wrap:wrap; gap:2px;">${tags}</div></div>`;
+        return `
+            <div style="margin-top:12px; background:#eff6ff; border:2px solid #bfdbfe; border-radius:14px; padding:12px; color:#1e3a8a;">
+                <div style="font-size:16px; font-weight:1000; margin-bottom:4px;">📦 PRODUTOS EMBALADOS EM PACKING</div>
+                <div style="font-size:13px; font-weight:800; color:#475569; margin-bottom:8px;">${relevantCount} produto${relevantCount !== 1 ? 's' : ''} relevante${relevantCount !== 1 ? 's' : ''} para comparar</div>
+                <div>${tags}</div>
+            </div>`;
     }
 
 
@@ -1208,17 +1306,55 @@ function handleScan(v, mode) {
 
         const statusEl = document.getElementById(isReturn ? 'rv-pack-status' : 'fv-pack-status');
         const btnIncomplete = document.getElementById(isReturn ? 'btn-return-incomplete' : 'btn-refund-incomplete');
+        const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
+        const btnNoProductDamaged = document.getElementById('btn-refund-no-product');
+        const btnRefundSwipe = document.getElementById('btn-refund-swipe');
+
+        const canUseRefundNoProductDamaged = () => {
+            // REFUNDS special close buttons can be used with or without products scanned.
+            // They only need ID + tracking. Normal COMPLETE/INCOMPLETE rules remain unchanged.
+            return isRefund && !!scanData.id && !!scanData.track;
+        };
+        const updateRefundSpecialButtons = () => {
+            const show = canUseRefundNoProductDamaged() ? 'block' : 'none';
+            if (btnNoProductDamaged) btnNoProductDamaged.style.display = show;
+            if (btnRefundSwipe) btnRefundSwipe.style.display = show;
+        };
+        const hideButtons = () => {
+            if (btnIncomplete) btnIncomplete.style.display = 'none';
+            if (btnComplete) btnComplete.style.display = 'none';
+        };
 
         if (!scanData.id) {
             if (statusEl) statusEl.style.display = 'none';
-            if (btnIncomplete) btnIncomplete.style.display = 'none';
+            hideButtons();
+            if (btnNoProductDamaged) btnNoProductDamaged.style.display = 'none';
+            if (btnRefundSwipe) btnRefundSwipe.style.display = 'none';
             const _bannerClear = document.getElementById(isReturn ? 'rv-partial-banner' : 'fv-partial-banner');
             if(_bannerClear) _bannerClear.style.display = 'none';
             return;
         }
 
-        // ✅ Show INCOMPLETO button IMMEDIATELY when ID is scanned — always visible from this point
-        if (btnIncomplete) btnIncomplete.style.display = 'block';
+        if (!hasCurrentReturnRefundProducts()) {
+            hideButtons();
+            updateRefundSpecialButtons();
+            let packedHtml = '';
+            try {
+                const packedCheck = await checkReturnVsPacking(scanData.id, []);
+                if (packedCheck && packedCheck.found) packedHtml = _renderPackedProdsHtml(packedCheck.packedProds);
+            } catch(e) { console.warn('packing preview failed', e); }
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = '#fff7ed';
+                statusEl.style.color = '#9a3412';
+                statusEl.style.border = '1px solid #fed7aa';
+                statusEl.innerHTML = isRefund
+                    ? '⚠️ Pica pelo menos <b>1 produto</b> antes de fechar como COMPLETO ou INCOMPLETO.<br><small>Se for caso de refund sem produto/produto danificado ou SWIPE, usa o botão correspondente.</small>' + packedHtml
+                    : '⚠️ Pica pelo menos <b>1 produto</b> antes de fechar como COMPLETO ou INCOMPLETO.' + packedHtml;
+            }
+            return;
+        }
+        updateRefundSpecialButtons();
 
         if (statusEl) {
             statusEl.style.display = 'block';
@@ -1232,24 +1368,35 @@ function handleScan(v, mode) {
         const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
 
         if (!check.found) {
-            // ID not found in packing — allow both COMPLETE and INCOMPLETE
-            const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
+            // ID not found in packing — allow both COMPLETE and INCOMPLETE (product already scanned).
             if (btnComplete) btnComplete.style.display = 'block';
+            if (btnIncomplete) btnIncomplete.style.display = 'block';
             if (statusEl) {
                 statusEl.style.background = '#f0fdf4';
                 statusEl.style.color = '#166534';
                 statusEl.style.border = '1px solid #bbf7d0';
-                statusEl.innerHTML = `ℹ️ ID não encontrado em Packing — COMPLETO ou INCOMPLETO disponíveis.`;
+                statusEl.innerHTML = `ℹ️ ID não encontrado em Packing — podes fechar como COMPLETO ou INCOMPLETO.`;
             }
             return;
         }
 
         const packedHtml = _renderPackedProdsHtml(check.packedProds);
 
+        if (check.extraProds && check.extraProds.length) {
+            hideButtons();
+            if (statusEl) {
+                statusEl.style.background = '#fef2f2';
+                statusEl.style.color = '#991b1b';
+                statusEl.style.border = '1px solid #fecaca';
+                statusEl.innerHTML = `⛔ Produto diferente/extra vs Packing — não pode fechar.<br>🟡 <b>Extra:</b> ${check.extraProds.join(', ')}<br><small>Apaga o produto errado no botão ×.</small>${packedHtml}`;
+            }
+            return;
+        }
+
         if (check.match) {
-            // All relevant products match — show COMPLETE button
-            const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
+            // Exact match — COMPLETE is allowed. INCOMPLETE remains available only if the operator chooses it.
             if (btnComplete) btnComplete.style.display = 'block';
+            if (btnIncomplete) btnIncomplete.style.display = 'block';
             if (statusEl) {
                 statusEl.style.background = '#f0fdf4';
                 statusEl.style.color = '#166534';
@@ -1258,25 +1405,84 @@ function handleScan(v, mode) {
                 statusEl.innerHTML = `✅ Produtos coincidem com packing (${relevantCount} relevante${relevantCount !== 1 ? 's' : ''}).${packedHtml}`;
             }
         } else {
-            // Mismatch — highlight that COMPLETE is blocked, INCOMPLETE is the right option
+            // Only missing products — COMPLETE is blocked, INCOMPLETE is allowed.
             let details = '';
             if (check.missingProds.length) details += `<br>🔴 <b>Faltam:</b> ${check.missingProds.join(', ')}`;
-            if (check.extraProds.length) details += `<br>🟡 <b>Extra:</b> ${check.extraProds.join(', ')}`;
-            const btnComplete = document.getElementById(isReturn ? 'btn-return-complete' : 'btn-refund-complete');
             if (btnComplete) btnComplete.style.display = 'none';
+            if (btnIncomplete) btnIncomplete.style.display = 'block';
             if (statusEl) {
                 statusEl.style.background = '#fff7ed';
                 statusEl.style.color = '#9a3412';
                 statusEl.style.border = '1px solid #fed7aa';
-                statusEl.innerHTML = `⚠️ Produtos <b>não coincidem</b> com o packing — usa ⚠️ INCOMPLETO.${details}${packedHtml}`;
+                statusEl.innerHTML = `⚠️ Faltam produtos do packing — podes fechar como ⚠️ INCOMPLETO.${details}${packedHtml}`;
             }
         }
+    }
+
+    async function confirmRefundSpecial(reasonLabel, statusKey) {
+        const m = 'REFUND';
+        const label = reasonLabel || 'SWIPE';
+        const status = statusKey || label;
+        if (!scanData.id || !scanData.track) return alert('Faltam dados (ID e tracking)!');
+        const specialHasProducts = hasCurrentReturnRefundProducts();
+        const specialProducts = specialHasProducts ? scanData.prods.join(' | ') : label;
+
+        const workDc = _nowDateClean();
+        const endTime = _nowTime();
+        const endTs = Date.now();
+        try {
+            const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
+            const recordPayload = {
+                id: scanData.id,
+                track: allTracks[0],
+                tracks: allTracks.join(' | '),
+                volumes: allTracks.length,
+                prods: specialProducts,
+                mode: m,
+                returnStatus: status,
+                refundReason: label,
+                specialCloseWithProducts: specialHasProducts,
+                batch: 'GENERAL',
+                user: currentUser.email.split('@')[0].toUpperCase(),
+                startTime: scanData.startTime || endTime,
+                endTime: endTime,
+                startTs: (typeof scanData.startTs === 'number') ? scanData.startTs : null,
+                endTs: endTs,
+                time: endTime,
+                dateClean: workDc,
+                DateTime: _dtKey(workDc, endTime),
+                workDateClean: workDc,
+                workDateTime: _dtKey(workDc, endTime),
+                ts: Date.now()
+            };
+            const regRef = await db.ref('registos').push(recordPayload);
+            // Special refund closures (SWIPE / SEM PRODUTO/PRODUTO DANIFICADO) are saved in Firebase only.
+            // Do not send them to Google Sheets.
+            resetScan();
+        } catch (e) {
+            alert('Erro ao gravar refund.');
+        }
+    }
+
+    // Save REFUND with no product / damaged product. Refunds only.
+    async function confirmRefundNoProductDamaged() {
+        return confirmRefundSpecial('SEM PRODUTO/PRODUTO DANIFICADO', 'NO_PRODUCT_DAMAGED');
+    }
+
+    // Save REFUND as SWIPE. Refunds only.
+    async function confirmRefundSwipe() {
+        return confirmRefundSpecial('SWIPE', 'SWIPE');
     }
 
     // Save return/refund as INCOMPLETE
     async function confirmOrderIncomplete(mode) {
         const m = mode || currentMode;
-        if (!scanData.id || !scanData.track) return alert("Faltam dados (ID e tracking)!");
+        if (_isReturnMode(m) || _isRefundMode(m)) {
+            const validation = await validateReturnRefundBeforeClose(m, 'INCOMPLETE');
+            if (!validation.ok) return alert(validation.message);
+        } else if (!scanData.id || !scanData.track) {
+            return alert("Faltam dados (ID e tracking)!");
+        }
         const workDc = _nowDateClean();
         const endTime = _nowTime();
         const endTs = Date.now();
@@ -1321,23 +1527,24 @@ function handleScan(v, mode) {
         const bId = document.getElementById('wh-batch-select').value;
         if(!scanData.id || !scanData.track) return alert("Faltam dados!");
 
-        // ✅ RETURN/REFUND: verify products match packed products before allowing COMPLETE
+        // ✅ RETURN/REFUND: product required; if PACKING exists, block wrong/extra products.
         if (_isReturnMode(m) || _isRefundMode(m)) {
-            await refreshPreviousIncompleteProducts(m);
-            const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
-            if (check.found && !check.match) {
-                let msg = `Não é possível gravar como COMPLETO — os produtos picados não coincidem com o packing.\n`;
-                if (check.missingProds.length) msg += `\nFaltam: ${check.missingProds.join(', ')}`;
-                if (check.extraProds.length) msg += `\nExtra: ${check.extraProds.join(', ')}`;
-                msg += `\n\nSe os produtos não voltaram todos, usa o botão ⚠️ INCOMPLETO.`;
-                return alert(msg);
-            }
+            const validation = await validateReturnRefundBeforeClose(m, 'COMPLETE');
+            if (!validation.ok) return alert(validation.message);
         }
 
         if(m === 'PACKING'){
             const chk = packingMeetsExpected();
             if(!chk.ok){
-                return alert("ERRO: faltam picar itens deste ID:\n- " + chk.missing.join("\n- "));
+                let msg = "ERRO: não é possível completar este ID.";
+                if(chk.missing && chk.missing.length){
+                    msg += "\n\nFaltam picar itens deste ID:\n- " + chk.missing.join("\n- ");
+                }
+                if(chk.extra && chk.extra.length){
+                    msg += "\n\nProdutos EXTRA picados neste ID:\n- " + chk.extra.join("\n- ");
+                    msg += "\n\nRemove/reinicia a picagem deste ID e pica apenas os produtos esperados.";
+                }
+                return alert(msg);
             }
             // ✅ VOLUMES: check all trackings have been scanned
             const requiredVols = (activeBatchData && activeBatchData.order_volumes && activeBatchData.order_volumes[scanData.id]) || 1;
@@ -1425,7 +1632,7 @@ function handleScan(v, mode) {
         document.getElementById('btn-confirm-order').style.display = 'none';
         // Clear return/refund status banners
         ['rv-pack-status', 'fv-pack-status'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
-        ['btn-return-incomplete', 'btn-refund-incomplete', 'btn-return-complete', 'btn-refund-complete'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+        ['btn-return-incomplete', 'btn-refund-incomplete', 'btn-return-complete', 'btn-refund-complete', 'btn-refund-no-product', 'btn-refund-swipe'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         ['rv-partial-banner', 'fv-partial-banner'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         scanData._prevIncompleteProds = [];
         refreshConfirmBtn(); 
@@ -2647,8 +2854,9 @@ function updateDashboardStats(all, fD, prepackCount) {
             rows.sort((a, b) => (a.ts - b.ts) || a.dt.localeCompare(b.dt));
 
             tbody.innerHTML = rows.map(r => {
-                const stColor = r.returnStatus === 'INCOMPLETE' ? '#f59e0b' : '#28a745';
-                const stLabel = r.returnStatus === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : '✅ COMPLETO';
+                const stKey = (r.returnStatus || 'COMPLETE').toString().toUpperCase();
+                const stColor = stKey === 'INCOMPLETE' ? '#f59e0b' : (stKey === 'NO_PRODUCT_DAMAGED' ? '#475569' : (stKey === 'SWIPE' ? '#0ea5e9' : '#28a745'));
+                const stLabel = stKey === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : (stKey === 'NO_PRODUCT_DAMAGED' ? '🚫 SEM PRODUTO/PRODUTO DANIFICADO' : (stKey === 'SWIPE' ? 'SWIPE' : '✅ COMPLETO'));
                 const hasPrev = r.prevProds && r.prevProds !== '';
                 const prevBadge = hasPrev ? `<span title="Fechado com produtos de picagem anterior" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:900;margin-left:4px;">+PARCIAL</span>` : '';
                 return `
@@ -2709,6 +2917,19 @@ function updateDashboardStats(all, fD, prepackCount) {
         __prepackTodayRef.on('value', __prepackTodayCb);
     }
 
+    function removeScannedProductAt(index) {
+        const idx = parseInt(index, 10);
+        if(!Array.isArray(scanData.prods)) scanData.prods = [];
+        if(isNaN(idx) || idx < 0 || idx >= scanData.prods.length) return;
+        scanData.prods.splice(idx, 1);
+        updateDisplay(currentMode);
+        // RETURNS/REFUNDS need to re-check COMPLETE vs INCOMPLETE after removing a product.
+        if (_isReturnMode(currentMode) || _isRefundMode(currentMode)) {
+            updateReturnRefundStatus(currentMode);
+            if (scanData.id) checkAndShowPartialBanner(currentMode);
+        }
+    }
+
     function updateDisplay(m) {
         // Update top labels for PACKING UI
         const idEl = document.getElementById('v-id');
@@ -2726,8 +2947,8 @@ function updateDashboardStats(all, fD, prepackCount) {
         const list = Array.isArray(scanData.prods) ? scanData.prods : [];
         if (prodsEl) {
             prodsEl.innerHTML = "";
-            list.forEach(name => {
-                prodsEl.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
+            list.forEach((name, idx) => {
+                prodsEl.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="Apagar este produto picado" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
             });
         }
 
@@ -2749,8 +2970,8 @@ function updateDashboardStats(all, fD, prepackCount) {
             if (rvTr) rvTr.textContent = scanData.track || "-";
             if (rvProds) {
                 rvProds.innerHTML = "";
-                list.forEach(name => {
-                    rvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
+                list.forEach((name, idx) => {
+                    rvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="Apagar este produto picado" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
                 });
             }
         }
@@ -2764,8 +2985,8 @@ function updateDashboardStats(all, fD, prepackCount) {
             if (fvTr) fvTr.textContent = scanData.track || "-";
             if (fvProds) {
                 fvProds.innerHTML = "";
-                list.forEach(name => {
-                    fvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span></div>`;
+                list.forEach((name, idx) => {
+                    fvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="Apagar este produto picado" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
                 });
             }
         }
@@ -3170,6 +3391,8 @@ function updateDashboardStats(all, fD, prepackCount) {
     }
     wrapSaving('confirmOrder', returnRefundLabel);
     wrapSaving('confirmOrderIncomplete', returnRefundLabel);
+    wrapSaving('confirmRefundNoProductDamaged', 'A gravar refund sem produto/produto danificado...');
+    wrapSaving('confirmRefundSwipe', 'A gravar refund SWIPE...');
     wrapSaving('deleteReturnRefundRecord', 'A apagar registo...');
 })();
 /* === END SAVING NOTICE / DOUBLE-CLICK GUARD === */
