@@ -1060,6 +1060,25 @@ function handleScan(v, mode) {
         }
     }
 
+    function getReturnRefundCompareProds() {
+        // For a second attempt after an INCOMPLETE return/refund, compare
+        // previous incomplete products + products scanned in the current session.
+        // This lets the operator scan only the missing products and then close as COMPLETE.
+        const prev = (scanData && Array.isArray(scanData._prevIncompleteProds)) ? scanData._prevIncompleteProds : [];
+        const current = (scanData && Array.isArray(scanData.prods)) ? scanData.prods : [];
+        return [...prev, ...current];
+    }
+
+    async function refreshPreviousIncompleteProducts(mode) {
+        if (!scanData || !scanData.id) {
+            if (scanData) scanData._prevIncompleteProds = [];
+            return [];
+        }
+        const result = await checkExistingIncomplete(scanData.id, mode);
+        scanData._prevIncompleteProds = (result && result.found) ? (result.allPrevProds || []) : [];
+        return scanData._prevIncompleteProds;
+    }
+
     // Build packed products display HTML (all products, warranties greyed out)
     function _renderPackedProdsHtml(packedProds) {
         if (!packedProds || packedProds.length === 0) return '';
@@ -1209,7 +1228,8 @@ function handleScan(v, mode) {
             statusEl.innerHTML = '🔍 A verificar packing...';
         }
 
-        const check = await checkReturnVsPacking(scanData.id, scanData.prods || []);
+        await refreshPreviousIncompleteProducts(m);
+        const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
 
         if (!check.found) {
             // ID not found in packing — allow both COMPLETE and INCOMPLETE
@@ -1303,7 +1323,8 @@ function handleScan(v, mode) {
 
         // ✅ RETURN/REFUND: verify products match packed products before allowing COMPLETE
         if (_isReturnMode(m) || _isRefundMode(m)) {
-            const check = await checkReturnVsPacking(scanData.id, scanData.prods || []);
+            await refreshPreviousIncompleteProducts(m);
+            const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
             if (check.found && !check.match) {
                 let msg = `Não é possível gravar como COMPLETO — os produtos picados não coincidem com o packing.\n`;
                 if (check.missingProds.length) msg += `\nFaltam: ${check.missingProds.join(', ')}`;
