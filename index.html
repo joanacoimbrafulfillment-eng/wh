@@ -129,6 +129,60 @@
         .partial-return-banner .pbanner-times {
             font-size: 11px; color: #b45309; margin-top: 4px;
         }
+
+
+        /* ===== PACKING FLOW GUIDED AUTO COMPLETE ===== */
+        .packing-guide-card{
+            margin: 0 0 16px 0;
+            border: 3px solid var(--accent);
+            border-radius: 16px;
+            background: #eff6ff;
+            padding: 18px 20px;
+            text-align: left;
+            box-shadow: 0 6px 14px rgba(52,152,219,.12);
+        }
+        .packing-guide-title{
+            font-size: 30px;
+            line-height: 1.1;
+            font-weight: 1000;
+            color: #1d4ed8;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .packing-guide-detail{
+            margin-top: 8px;
+            font-size: 18px;
+            line-height: 1.35;
+            font-weight: 800;
+            color: #334155;
+        }
+        .packing-guide-card.ok{ background:#f0fdf4; border-color:#22c55e; }
+        .packing-guide-card.ok .packing-guide-title{ color:#166534; }
+        .packing-guide-card.warn{ background:#fffbeb; border-color:#f59e0b; }
+        .packing-guide-card.warn .packing-guide-title{ color:#92400e; }
+        .packing-guide-card.bad{ background:#fef2f2; border-color:#ef4444; }
+        .packing-guide-card.bad .packing-guide-title{ color:#991b1b; }
+        .packing-guide-card.done{ background:#ecfdf5; border-color:#10b981; }
+        .packing-guide-card.done .packing-guide-title{ color:#047857; }
+        .packing-mini-progress{
+            margin-top: 10px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            align-items:center;
+        }
+        .packing-mini-pill{
+            display:inline-flex;
+            padding:6px 10px;
+            border-radius:999px;
+            font-size:12px;
+            font-weight:900;
+            text-transform:uppercase;
+            background:#fff;
+            border:1px solid #cbd5e1;
+            color:#334155;
+        }
+
     </style>
 </head>
 <body>
@@ -154,6 +208,30 @@
             <button onclick="document.getElementById('volumes-alert-modal').style.display='none'; document.getElementById('main-input').focus();"
                 style="margin-top:30px; width:100%; padding:25px; font-size:24px; font-weight:900; background:#f59e0b; color:white; border:none; border-radius:15px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
                 OK, ENTENDIDO
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL: PACKING BATCH COMPLETE - SMARTPHONE LARGE MESSAGE -->
+<div id="packing-complete-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:9500; justify-content:center; align-items:center; padding:18px;">
+    <div style="background:white; border-radius:28px; width:100%; max-width:560px; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.55); text-align:center; border:6px solid #22c55e;">
+        <div style="background:#22c55e; padding:34px 20px; color:white;">
+            <div style="font-size:72px; line-height:1;">✅</div>
+            <div style="font-size:48px; font-weight:1000; margin-top:12px; text-transform:uppercase; letter-spacing:1px; line-height:1.05;">LOTE COMPLETO</div>
+        </div>
+        <div style="padding:34px 24px;">
+            <div id="packing-complete-batch-name" style="font-size:22px; font-weight:900; color:#334155; margin-bottom:18px; word-break:break-word;"></div>
+            <div style="font-size:42px; line-height:1.08; font-weight:1000; color:#1d4ed8; text-transform:uppercase; margin-bottom:10px;">
+                SELECIONAR<br>NOVO LOTE
+            </div>
+            <div style="font-size:20px; line-height:1.35; font-weight:800; color:#475569; margin-top:12px;">
+                Todos os IDs deste lote foram concluídos. Escolhe outro lote para continuar o Packing.
+            </div>
+            <button onclick="closePackingCompleteModal()"
+                style="margin-top:30px; width:100%; padding:28px 20px; font-size:30px; font-weight:1000; background:#1d4ed8; color:white; border:none; border-radius:18px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
+                OK, SELECIONAR LOTE
             </button>
         </div>
     </div>
@@ -441,7 +519,12 @@
                 </div>
             </div>
             <div class="card scan-area" style="text-align:center;">
-                <input type="text" id="main-input" placeholder="SCAN BARCODE..." style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--accent); border-radius:15px;" autocomplete="off">
+                <div id="packing-step-guide" class="packing-guide-card">
+                    <div id="packing-step-title" class="packing-guide-title">1. PICAR ID</div>
+                    <div id="packing-step-detail" class="packing-guide-detail">Seleciona um lote e pica primeiro o ID da encomenda.</div>
+                    <div id="packing-step-progress" class="packing-mini-progress"></div>
+                </div>
+                <input type="text" id="main-input" placeholder="PICAR ID" style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--accent); border-radius:15px;" autocomplete="off">
                 <button id="btn-confirm-order" class="btn-mobile-op btn-op-green" style="display:none;" onclick="confirmOrder('PACKING')">ID COMPLETE</button>
             </div>
             <div class="card">
@@ -968,42 +1051,250 @@ function getActiveScanInput(){
         return { ok: missing.length === 0 && extra.length === 0, missing: missing, extra: extra, expected: expected, scanned: scanned };
     }
 
+    function getPackingRequiredVolumes(){
+        return (activeBatchData && activeBatchData.order_volumes && activeBatchData.order_volumes[scanData.id]) || 1;
+    }
+
+    function getPackingScannedVolumes(){
+        return (scanData.tracks && scanData.tracks.length) || (scanData.track ? 1 : 0);
+    }
+
+    function getPackingExpectedIdCount(){
+        return activeBatchData ? getRequiredBatchIds(activeBatchData).length : 0;
+    }
+
+    function getPackingDoneIdCount(extraId){
+        if(!activeBatchData) return 0;
+        const requiredIds = getRequiredBatchIds(activeBatchData);
+        const processedMap = Object.assign({}, activeBatchData.processed_ids || {});
+        if(extraId) processedMap[extraId] = true;
+        return requiredIds.filter(id => processedMap[id]).length;
+    }
+
+    function packingCurrentIdIsCancelled(){
+        return !!(activeBatchData && scanData.id && activeBatchData.cancelled_ids && activeBatchData.cancelled_ids[scanData.id]);
+    }
+
+    function packingIdBelongsToBatch(id){
+        if(!activeBatchData || !id) return false;
+        const ids = activeBatchData.expected_ids || [];
+        return ids.includes(id);
+    }
+
+    function setPackingGuide(kind, title, detail, pills){
+        const box = document.getElementById('packing-step-guide');
+        const t = document.getElementById('packing-step-title');
+        const d = document.getElementById('packing-step-detail');
+        const p = document.getElementById('packing-step-progress');
+        if(box){
+            box.className = 'packing-guide-card' + (kind ? (' ' + kind) : '');
+        }
+        if(t) t.innerHTML = title || '';
+        if(d) d.innerHTML = detail || '';
+        if(p){
+            const items = Array.isArray(pills) ? pills : [];
+            p.innerHTML = items.map(x => `<span class="packing-mini-pill">${x}</span>`).join('');
+        }
+    }
+
+    function updatePackingGuidance(){
+        if((currentMode || '') !== 'PACKING') return;
+        const inp = document.getElementById('main-input');
+        const batchId = document.getElementById('wh-batch-select') ? document.getElementById('wh-batch-select').value : '';
+        const total = getPackingExpectedIdCount();
+        const done = getPackingDoneIdCount();
+        const batchPill = total ? [`Lote: ${done}/${total} IDs completos`] : [];
+
+        if(!batchId || !activeBatchData){
+            if(inp) inp.placeholder = 'SELECIONAR LOTE';
+            setPackingGuide('warn', 'SELECIONAR LOTE', 'Seleciona primeiro um lote ativo para começar o Packing.', []);
+            return;
+        }
+
+        if(!scanData.id){
+            if(inp) inp.placeholder = 'PICAR ID';
+            setPackingGuide('', '1. PICAR ID', 'Pica o ID da encomenda. Só depois o sistema permite picar produtos.', batchPill);
+            return;
+        }
+
+        if(packingCurrentIdIsCancelled()){
+            if(inp) inp.placeholder = 'ID CANCELADO - LIMPAR';
+            setPackingGuide('bad', 'ID CANCELADO', 'Este ID está cancelado. Carrega em CLEAR SCAN e pica outro ID.', [`ID: ${scanData.id}`, ...batchPill]);
+            return;
+        }
+
+        const chk = packingMeetsExpected();
+        const requiredVols = getPackingRequiredVolumes();
+        const gotTracks = getPackingScannedVolumes();
+        const basePills = [`ID: ${scanData.id}`, `Produtos picados: ${(scanData.prods || []).length}`, `Tracking: ${gotTracks}/${requiredVols}`, ...batchPill];
+
+        if(chk.extra && chk.extra.length){
+            if(inp) inp.placeholder = 'REMOVER PRODUTO ERRADO';
+            setPackingGuide('bad', 'PRODUTO EXTRA / DIFERENTE', `Não podes fechar este ID. Remove no botão <b>×</b> o produto que não pertence ao pedido.<br><br><b>Extra/diferente:</b> ${chk.extra.join(', ')}`, basePills);
+            return;
+        }
+
+        if(chk.missing && chk.missing.length){
+            if(inp) inp.placeholder = 'PICAR PRODUTOS';
+            setPackingGuide('warn', '2. PICAR PRODUTOS', `Pica os produtos deste ID. Ainda falta:<br><b>${chk.missing.join('<br>')}</b>`, basePills);
+            return;
+        }
+
+        if(!scanData.track || gotTracks < requiredVols){
+            if(inp) inp.placeholder = requiredVols > 1 ? `PICAR TRACKING ${gotTracks + 1}/${requiredVols}` : 'PICAR TRACKING';
+            setPackingGuide('ok', '3. PICAR TRACKING', requiredVols > 1 ? `Produtos certos. Agora pica todos os trackings deste ID. Faltam ${requiredVols - gotTracks}.` : 'Produtos certos. Agora pica o tracking. O ID fecha automaticamente depois do tracking.', basePills);
+            return;
+        }
+
+        if(inp) inp.placeholder = 'A FECHAR ID...';
+        setPackingGuide('done', 'ID A FECHAR AUTOMATICAMENTE', 'Produtos e tracking corretos. O sistema vai concluir este ID automaticamente.', basePills);
+    }
+
     function refreshConfirmBtn(){
         const btn = document.getElementById('btn-confirm-order');
         if(!btn) return;
 
-        if(scanData.id && scanData.track){
-            if((currentMode || 'PACKING') === 'PACKING'){
-                const chk = packingMeetsExpected();
-                const requiredVols = (activeBatchData && activeBatchData.order_volumes && activeBatchData.order_volumes[scanData.id]) || 1;
-                const gotTracks = (scanData.tracks && scanData.tracks.length) || (scanData.track ? 1 : 0);
-                const volOk = gotTracks >= requiredVols;
-                // Keep the button visible when there are only EXTRA products so the operator gets a clear alert on click.
-                // Missing products or missing volumes still hide the button as before.
-                const missingOk = !(chk.missing && chk.missing.length);
-                btn.style.display = (missingOk && volOk) ? 'block' : 'none';
-                // Update volumes indicator
-                const volEl = document.getElementById('v-volumes-status');
-                if(volEl){
-                    if(requiredVols > 1){
-                        volEl.style.display = 'block';
-                        volEl.innerHTML = `<b>Volumes:</b> ${gotTracks}/${requiredVols} trackings picados`;
-                        volEl.style.color = volOk ? '#166534' : '#b45309';
-                    } else {
-                        volEl.style.display = 'none';
-                    }
+        if((currentMode || 'PACKING') === 'PACKING'){
+            // PACKING is now fully guided and auto-completes after the tracking scan.
+            btn.style.display = 'none';
+            const volEl = document.getElementById('v-volumes-status');
+            if(volEl){
+                const requiredVols = getPackingRequiredVolumes();
+                const gotTracks = getPackingScannedVolumes();
+                if(scanData.id && requiredVols > 1){
+                    volEl.style.display = 'block';
+                    volEl.innerHTML = `<b>Volumes:</b> ${gotTracks}/${requiredVols} trackings picados`;
+                    volEl.style.color = gotTracks >= requiredVols ? '#166534' : '#b45309';
+                } else {
+                    volEl.style.display = 'none';
                 }
-            } else {
-                btn.style.display = 'block';
             }
+            updatePackingGuidance();
+            return;
+        }
+
+        if(scanData.id && scanData.track){
+            btn.style.display = 'block';
         } else {
             btn.style.display = 'none';
         }
     }
-    // ============================================================
+
+    async function handlePackingScan(rawValue){
+        const v = String(rawValue || '').trim();
+        if(!v) { updatePackingGuidance(); return; }
+
+        if(!activeBatchData || !document.getElementById('wh-batch-select').value){
+            updatePackingGuidance();
+            alert('Seleciona primeiro um lote ativo.');
+            return;
+        }
+
+        const key = safeKey(v);
+        const isProduct = !!masterProductsDB[key];
+        const isOrderId = /^\d{8}$/.test(v);
+
+        if(isOrderId){
+            if(scanData.id){
+                alert(`Termina primeiro o ID atual (${scanData.id}). Se precisares, carrega em CLEAR SCAN.`);
+                updatePackingGuidance();
+                return;
+            }
+            if(!packingIdBelongsToBatch(v)){
+                alert(`ID ${v} não pertence ao lote selecionado. Confirma o lote antes de continuar.`);
+                updatePackingGuidance();
+                return;
+            }
+            scanData.startTime = _nowTime();
+            scanData.startTs = Date.now();
+            scanData.id = v;
+            showMetadata(v);
+            updateDisplay('PACKING');
+            refreshConfirmBtn();
+            return;
+        }
+
+        if(isProduct){
+            if(!scanData.id){
+                alert('Primeiro tens de picar o ID.');
+                updatePackingGuidance();
+                return;
+            }
+            if(packingCurrentIdIsCancelled()){
+                alert('Este ID está cancelado. Limpa a picagem e passa ao próximo ID.');
+                updatePackingGuidance();
+                return;
+            }
+            if(scanData.track){
+                alert('O tracking já foi picado. Aguarda a conclusão automática ou limpa a picagem.');
+                updatePackingGuidance();
+                return;
+            }
+            scanData.prods.push(masterProductsDB[key]);
+            updateDisplay('PACKING');
+            refreshConfirmBtn();
+            await autoCompletePackingIfReady();
+            return;
+        }
+
+        // Not an ID and not a product in master data: in PACKING this is treated as tracking,
+        // but only after the expected products are exactly correct.
+        if(!scanData.id){
+            alert('Primeiro tens de picar o ID.');
+            updatePackingGuidance();
+            return;
+        }
+        if(packingCurrentIdIsCancelled()){
+            alert('Este ID está cancelado. Limpa a picagem e passa ao próximo ID.');
+            updatePackingGuidance();
+            return;
+        }
+        const chk = packingMeetsExpected();
+        if(chk.extra && chk.extra.length){
+            alert('Existe produto extra/diferente. Remove o produto errado antes de picar o tracking.');
+            updatePackingGuidance();
+            return;
+        }
+        if(chk.missing && chk.missing.length){
+            alert('Ainda faltam produtos. Não podes picar tracking antes dos produtos certos.\n\nFaltam:\n- ' + chk.missing.join('\n- '));
+            updatePackingGuidance();
+            return;
+        }
+        if(!scanData.tracks) scanData.tracks = [];
+        if(!scanData.tracks.includes(v)) scanData.tracks.push(v);
+        scanData.track = scanData.tracks[0];
+        updateDisplay('PACKING');
+        refreshConfirmBtn();
+        await autoCompletePackingIfReady();
+    }
+
+    async function autoCompletePackingIfReady(){
+        if((currentMode || '') !== 'PACKING') return;
+        if(scanData._autoCompleting) return;
+        if(!scanData.id || !scanData.track) { updatePackingGuidance(); return; }
+        if(packingCurrentIdIsCancelled()) { updatePackingGuidance(); return; }
+        const chk = packingMeetsExpected();
+        const requiredVols = getPackingRequiredVolumes();
+        const gotTracks = getPackingScannedVolumes();
+        if(chk.ok && gotTracks >= requiredVols){
+            scanData._autoCompleting = true;
+            updatePackingGuidance();
+            try {
+                await confirmOrder('PACKING', {auto:true});
+            } finally {
+                if(scanData && scanData._autoCompleting) scanData._autoCompleting = false;
+            }
+        } else {
+            updatePackingGuidance();
+        }
+    }
 
 function handleScan(v, mode) {
         const m = mode || currentMode;
+        if((m || '').toString().toUpperCase() === 'PACKING') {
+            handlePackingScan(v);
+            return;
+        }
         const key = safeKey(v);
         if(masterProductsDB[key]) {
             const prodName = masterProductsDB[key]; scanData.prods.push(prodName);
@@ -1522,7 +1813,57 @@ Faltam produtos do Packing:
     }
     // ============================================================
 
-    async function confirmOrder(mode) {
+
+
+
+    function showPackingCompleteModal(batchName){
+        const modal = document.getElementById('packing-complete-modal');
+        const nameEl = document.getElementById('packing-complete-batch-name');
+        if(nameEl) nameEl.textContent = batchName ? ('Lote: ' + batchName) : '';
+        if(modal){
+            modal.style.display = 'flex';
+        } else {
+            alert(`LOTE COMPLETO AUTOMATICAMENTE: ${batchName || ''}\n\nSELECIONAR NOVO LOTE`);
+        }
+    }
+
+    function closePackingCompleteModal(){
+        const modal = document.getElementById('packing-complete-modal');
+        if(modal) modal.style.display = 'none';
+        const sel = document.getElementById('wh-batch-select');
+        if(sel) sel.focus();
+    }
+
+    async function autoFinishBatchPackingIfCompleteAfterId(bId, justPackedId){
+        if(!bId || !activeBatchData) return false;
+        const requiredIds = getRequiredBatchIds(activeBatchData);
+        const processedMap = Object.assign({}, activeBatchData.processed_ids || {});
+        if(justPackedId) processedMap[justPackedId] = true;
+        const missing = requiredIds.filter(id => !processedMap[id]);
+        if(missing.length > 0) return false;
+
+        const batchName = activeBatchData.name || bId;
+        await db.ref('active_batches/' + bId).update({
+            status: 'COMPLETED',
+            completedBy: currentUser && currentUser.email ? currentUser.email.split('@')[0].toUpperCase() : 'SYSTEM',
+            completedAt: _nowDateTime(),
+            completedTs: Date.now()
+        });
+        try { await logBatchAction(bId, 'BATCH COMPLETED AUTOMATICALLY'); } catch(e) { console.warn('auto batch log failed', e); }
+        localStorage.removeItem('lastPackingBatch');
+        const sel = document.getElementById('wh-batch-select');
+        if(sel) sel.value = '';
+        activeBatchData = null;
+        activeBatchPath = null;
+        updatePackingGuidance();
+        setTimeout(() => {
+            alert(`LOTE COMPLETO AUTOMATICAMENTE: ${batchName}\n\nTodos os IDs do lote foram concluídos. Seleciona outro lote para continuar.`);
+            try { syncGlobalData(); } catch(e) { console.warn(e); }
+        }, 80);
+        return true;
+    }
+
+    async function confirmOrder(mode, opts) {
         const m = mode || currentMode;
         const bId = document.getElementById('wh-batch-select').value;
         if(!scanData.id || !scanData.track) return alert("Faltam dados!");
@@ -1613,7 +1954,13 @@ Faltam produtos do Packing:
             const regRef = await db.ref('registos').push(recordPayload);
             await whSheetsSendReturnRefundRecord(regRef.key, recordPayload);
 
+            let __packingBatchAutoCompleted = false;
+            if(m === 'PACKING' && bId) {
+                __packingBatchAutoCompleted = await autoFinishBatchPackingIfCompleteAfterId(bId, scanData.id);
+            }
+
             resetScan();
+            if(__packingBatchAutoCompleted) updatePackingGuidance();
         } catch (e) {
             alert('Erro ao gravar.');
         }
@@ -2282,7 +2629,8 @@ idsList.innerHTML = html + '</tbody></table>';
         activeBatchPath = 'active_batches/' + bId;
         db.ref(activeBatchPath).on('value', s => {
             activeBatchData = s.val(); if(!activeBatchData) return;
-            document.getElementById('btn-finalize-batch').style.display = 'block';
+            document.getElementById('btn-finalize-batch').style.display = 'none';
+            updatePackingGuidance();
             updateProcessedTable(bId);
         });
     }
@@ -2682,7 +3030,7 @@ function updateDashboardStats(all, fD, prepackCount) {
                 if(b.status === 'READY_TO_PACK') whOpt += `<option value="${k}">${label}</option>`; 
             } 
         }
-        if(selPK) { const prevPK = selPK.value; selPK.innerHTML = pkOpt; if(prevPK && selPK.querySelector(`option[value="${prevPK}"]`)) selPK.value = prevPK; } if(selWH) { selWH.innerHTML = whOpt; const cur = localStorage.getItem('lastPackingBatch'); if(cur && selWH.querySelector(`option[value="${cur}"]`)) selWH.value = cur; }
+        if(selPK) { const prevPK = selPK.value; selPK.innerHTML = pkOpt; if(prevPK && selPK.querySelector(`option[value="${prevPK}"]`)) selPK.value = prevPK; } if(selWH) { selWH.innerHTML = whOpt; const cur = localStorage.getItem('lastPackingBatch'); if(cur && selWH.querySelector(`option[value="${cur}"]`)) selWH.value = cur; } try { updatePackingGuidance(); } catch(e) {}
     }
     function updateMasterPreview() { const tbody = document.querySelector('#master-db-table tbody'), search = document.getElementById('master-search').value.toUpperCase(); tbody.innerHTML = ""; Object.keys(masterProductsDB).forEach(k => { if (k.includes(search) || masterProductsDB[k].toUpperCase().includes(search)) { tbody.innerHTML += `<tr><td>${k}</td><td>${masterProductsDB[k]}</td></tr>`; } }); }
     function handleCSVUpload() { const fileInput = document.getElementById('csv-file-input'); if (!fileInput.files.length) return; const reader = new FileReader(); reader.onload = function(e) { const lines = e.target.result.split(/\r?\n/); const newMaster = {}; lines.forEach((line, index) => { if (index === 0 || !line.trim()) return; const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); if (parts.length >= 2) { let name = parts[0].replace(/^"|"$/g, '').trim(), bar = parts[1].replace(/^"|"$/g, '').trim(); if(bar) newMaster[safeKey(bar)] = name; } }); db.ref('config/master_products').set(newMaster).then(() => alert("Master Updated!")); }; reader.readAsText(fileInput.files[0]); }
@@ -2927,6 +3275,10 @@ function updateDashboardStats(all, fD, prepackCount) {
         if (_isReturnMode(currentMode) || _isRefundMode(currentMode)) {
             updateReturnRefundStatus(currentMode);
             if (scanData.id) checkAndShowPartialBanner(currentMode);
+        }
+        if ((currentMode || '') === 'PACKING') {
+            updatePackingGuidance();
+            autoCompletePackingIfReady();
         }
     }
 
