@@ -702,12 +702,24 @@
         if(!record) return false;
         const mode = record.mode || currentMode;
         if(!_isRefundMode(mode)) return false;
+
         const status = String(record.returnStatus || '').trim().toUpperCase();
         const reason = String(record.refundReason || '').trim().toUpperCase();
-        // Refunds closed with these special operator buttons stay only in Firebase/history.
-        // They must NOT be sent to Google Sheets RETURNS_REFUNDS.
-        return status === 'SWIPE' || status === 'NO_PRODUCT' || status === 'PRODUCT_DAMAGED' || status === 'BOX_DAMAGED' || status === 'NO_PRODUCT_DAMAGED' ||
-               reason === 'SWIPE' || reason === 'SEM PRODUTO' || reason === 'PRODUTO DANIFICADO' || reason === 'CAIXA DANIFICADA' || reason === 'SEM PRODUTO/PRODUTO DANIFICADO';
+
+        // Google Sheets must receive ONLY normal REFUNDS closed as COMPLETE or INCOMPLETE.
+        // Special refund buttons stay only in Firebase/history, even when products were scanned.
+        if(record.specialNoTracking === true || record.specialCloseWithProducts !== undefined || reason) return true;
+
+        return status === 'SWIPE' ||
+               status === 'NO_PRODUCT' ||
+               status === 'PRODUCT_DAMAGED' ||
+               status === 'BOX_DAMAGED' ||
+               status === 'NO_PRODUCT_DAMAGED' ||
+               reason === 'SWIPE' ||
+               reason === 'SEM PRODUTO' ||
+               reason === 'PRODUTO DANIFICADO' ||
+               reason === 'CAIXA DANIFICADA' ||
+               reason === 'SEM PRODUTO/PRODUTO DANIFICADO';
     }
 
     async function whSheetsSendReturnRefundRecord(regKey, record) {
