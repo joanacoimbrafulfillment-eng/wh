@@ -2876,11 +2876,30 @@ idsList.innerHTML = html + '</tbody></table>';
     }
 
     function loadBatchData(bId) {
-        if(!bId) return; localStorage.setItem('lastPackingBatch', bId);
-        if(activeBatchPath) db.ref(activeBatchPath).off();
+        // PACKING: allow clearing/changing the selected batch safely.
+        // Without this, an old saved batch could keep the selector stuck or leave stale activeBatchData.
+        if(!bId) {
+            localStorage.removeItem('lastPackingBatch');
+            if(activeBatchPath) db.ref(activeBatchPath).off();
+            if(__processedRegRef && __processedRegCb) __processedRegRef.off('value', __processedRegCb);
+            activeBatchPath = null;
+            activeBatchData = null;
+            __processedRegRef = null;
+            __processedRegCb = null;
+            updatePackingGuidance();
+            return;
+        }
+
+        localStorage.setItem('lastPackingBatch', bId);
+        if(activeBatchPath && activeBatchPath !== ('active_batches/' + bId)) db.ref(activeBatchPath).off();
         activeBatchPath = 'active_batches/' + bId;
         db.ref(activeBatchPath).on('value', s => {
-            activeBatchData = s.val(); if(!activeBatchData) return;
+            activeBatchData = s.val();
+            if(!activeBatchData) {
+                activeBatchData = null;
+                updatePackingGuidance();
+                return;
+            }
             document.getElementById('btn-finalize-batch').style.display = 'none';
             updatePackingGuidance();
             updateProcessedTable(bId);
@@ -3278,14 +3297,56 @@ function updateDashboardStats(all, fD, prepackCount) {
     function updateSelects(bts, fD) {
         const selWH = document.getElementById('wh-batch-select'), selPK = document.getElementById('pick-batch-select');
         let pkOpt = '<option value="">-- SELECT PICKING BATCH --</option>', whOpt = '<option value="">-- SELECT PACKING BATCH --</option>';
-        for(let k in bts) { 
-            const b = bts[k]; if(b.dateClean === fD) { 
-                const label = b.name + ' | ' + b.carrier; 
-                if(b.status === 'PENDING_PICK') pkOpt += `<option value="${k}">${label}</option>`; 
-                if(b.status === 'READY_TO_PACK') whOpt += `<option value="${k}">${label}</option>`; 
-            } 
+
+        for(let k in bts) {
+            const b = bts[k];
+            if(!b || b.dateClean !== fD) continue;
+            const label = (b.name || k) + ' | ' + (b.carrier || '');
+            const st = String(b.status || '').trim().toUpperCase();
+            if(st === 'PENDING_PICK') pkOpt += `<option value="${k}">${label}</option>`;
+            if(st === 'READY_TO_PACK') whOpt += `<option value="${k}">${label}</option>`;
         }
-        if(selPK) { const prevPK = selPK.value; selPK.innerHTML = pkOpt; if(prevPK && selPK.querySelector(`option[value="${prevPK}"]`)) selPK.value = prevPK; } if(selWH) { selWH.innerHTML = whOpt; const cur = localStorage.getItem('lastPackingBatch'); if(cur && selWH.querySelector(`option[value="${cur}"]`)) selWH.value = cur; } try { updatePackingGuidance(); } catch(e) {}
+
+        if(selPK) {
+            const prevPK = selPK.value;
+            if(selPK.dataset.lastOptions !== pkOpt) {
+                selPK.innerHTML = pkOpt;
+                selPK.dataset.lastOptions = pkOpt;
+            }
+            if(prevPK && selPK.querySelector(`option[value="${prevPK}"]`)) selPK.value = prevPK;
+        }
+
+        if(selWH) {
+            const prevWH = selWH.value;
+            const savedWH = localStorage.getItem('lastPackingBatch') || '';
+            const wantedWH = prevWH || savedWH;
+
+            // Do not rebuild the PACKING selector on every realtime refresh if the options are the same.
+            // Rebuilding while the operator is opening the dropdown can make it impossible to select a batch.
+            if(selWH.dataset.lastOptions !== whOpt) {
+                selWH.innerHTML = whOpt;
+                selWH.dataset.lastOptions = whOpt;
+            }
+
+            if(wantedWH && selWH.querySelector(`option[value="${wantedWH}"]`)) {
+                selWH.value = wantedWH;
+                if(savedWH !== wantedWH) localStorage.setItem('lastPackingBatch', wantedWH);
+
+                // If the selector has a saved/visible value but the batch was not loaded yet, load it once.
+                if(activeBatchPath !== ('active_batches/' + wantedWH)) {
+                    setTimeout(function(){
+                        const currentValue = selWH.value;
+                        if(currentValue === wantedWH) loadBatchData(wantedWH);
+                    }, 0);
+                }
+            } else if(prevWH || savedWH) {
+                // Old saved batch is no longer available for this date/status.
+                localStorage.removeItem('lastPackingBatch');
+                if(!selWH.value) loadBatchData('');
+            }
+        }
+
+        try { updatePackingGuidance(); } catch(e) {}
     }
     function updateMasterPreview() { const tbody = document.querySelector('#master-db-table tbody'), search = document.getElementById('master-search').value.toUpperCase(); tbody.innerHTML = ""; Object.keys(masterProductsDB).forEach(k => { if (k.includes(search) || masterProductsDB[k].toUpperCase().includes(search)) { tbody.innerHTML += `<tr><td>${k}</td><td>${masterProductsDB[k]}</td></tr>`; } }); }
     function handleCSVUpload() { const fileInput = document.getElementById('csv-file-input'); if (!fileInput.files.length) return; const reader = new FileReader(); reader.onload = function(e) { const lines = e.target.result.split(/\r?\n/); const newMaster = {}; lines.forEach((line, index) => { if (index === 0 || !line.trim()) return; const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); if (parts.length >= 2) { let name = parts[0].replace(/^"|"$/g, '').trim(), bar = parts[1].replace(/^"|"$/g, '').trim(); if(bar) newMaster[safeKey(bar)] = name; } }); db.ref('config/master_products').set(newMaster).then(() => alert("Master Updated!")); }; reader.readAsText(fileInput.files[0]); }
