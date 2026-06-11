@@ -645,6 +645,7 @@
     let __overviewPrepackRef = null, __overviewPrepackCb = null;
     let __overviewCacheBatches = {};
     let __overviewCachePrepackCount = 0;
+    let __overviewAutoCompletePending = {};
 
     let __prepackTodayRef = null, __prepackTodayCb = null;
     let __returnsTodayRef = null, __returnsTodayCb = null;
@@ -2032,6 +2033,67 @@ Faltam produtos do Packing:
         return true;
     }
 
+    function overviewBatchIsReadyToAutoComplete(batch){
+        if(!batch || batch.status === 'COMPLETED') return false;
+        // Do not move batches that are still in PICKING. Only Packing-ready batches can be auto-completed.
+        if(batch.status !== 'READY_TO_PACK') return false;
+        const requiredIds = getRequiredBatchIds(batch);
+        if(!requiredIds.length) return false;
+        const processedMap = batch.processed_ids || {};
+        const missing = requiredIds.filter(id => !processedMap[id]);
+        return missing.length === 0;
+    }
+
+    async function autoCompleteOverviewBatchIf100Percent(batchId, batch, dateFilter){
+        if(!batchId || !overviewBatchIsReadyToAutoComplete(batch)) return false;
+        if(__overviewAutoCompletePending[batchId]) return false;
+        __overviewAutoCompletePending[batchId] = true;
+
+        const user = currentUser && currentUser.email
+            ? currentUser.email.split('@')[0].toUpperCase()
+            : 'SYSTEM';
+
+        try {
+            await db.ref('active_batches/' + batchId).update({
+                status: 'COMPLETED',
+                completedBy: user,
+                completedAt: _nowDateTime(),
+                completedTs: Date.now(),
+                completedAutoChecked: true,
+                completedAutoCheckedFrom: 'WAREHOUSE_OVERVIEW_100_PERCENT'
+            });
+            try { await logBatchAction(batchId, 'BATCH COMPLETED AUTOMATICALLY BY OVERVIEW CHECK: 100% IDS PACKED'); } catch(e) { console.warn('overview auto-complete log failed', e); }
+
+            // For non-realtime dates, update the local cache and re-render immediately.
+            if(__overviewCacheBatches && __overviewCacheBatches[batchId]) {
+                __overviewCacheBatches[batchId].status = 'COMPLETED';
+                __overviewCacheBatches[batchId].completedBy = user;
+                __overviewCacheBatches[batchId].completedAt = _nowDateTime();
+                __overviewCacheBatches[batchId].completedAutoChecked = true;
+            }
+            if(dateFilter) {
+                setTimeout(function(){ try { __renderOverviewForDate(dateFilter); } catch(e) {} }, 80);
+            }
+            return true;
+        } catch(e) {
+            console.warn('overview auto complete failed for batch', batchId, e);
+            return false;
+        } finally {
+            delete __overviewAutoCompletePending[batchId];
+        }
+    }
+
+    function autoCompleteOverviewBatchesIf100Percent(allBatches, dateFilter){
+        if(!allBatches || typeof allBatches !== 'object') return;
+        Object.entries(allBatches).forEach(function(entry){
+            const batchId = entry[0];
+            const batch = entry[1];
+            if(!batch || batch.dateClean !== dateFilter) return;
+            if(!overviewBatchIsReadyToAutoComplete(batch)) return;
+            autoCompleteOverviewBatchIf100Percent(batchId, batch, dateFilter);
+        });
+    }
+
     async function confirmOrder(mode, opts) {
         const m = mode || currentMode;
         const bId = document.getElementById('wh-batch-select').value;
@@ -3027,6 +3089,9 @@ Missing: ${sample}${more}`);
 
     function __renderOverviewForDate(fD){
         const bts = __overviewCacheBatches || {};
+        // Safety net: if a batch is already 100% packed but stayed READY_TO_PACK,
+        // move it to COMPLETED automatically when Overview/filters refresh.
+        autoCompleteOverviewBatchesIf100Percent(bts, fD);
         updateDashboardStats(bts, fD, __overviewCachePrepackCount);
         updatePickingMiniDashboard(bts, fD);
         renderManagementUI(bts, fD);
