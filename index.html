@@ -1415,6 +1415,7 @@ function handleScan(v, mode) {
             // Check for previous INCOMPLETE records when ID is set
             if (scanData.id) {
                 checkAndShowPartialBanner(m);
+                maybeShowReturnRefundPartialBlock(m);
             }
         }
     }
@@ -1493,6 +1494,144 @@ function handleScan(v, mode) {
         return current.some(p => String(p || '').trim() && String(p || '').trim() !== 'No Items');
     }
 
+    function _returnRefundRelevantCounts(list) {
+        const counts = {};
+        const arr = Array.isArray(list) ? list : String(list || '').split('|');
+        arr.forEach(function(p){
+            const k = String(p || '').trim().toUpperCase();
+            if(!k || k === 'NO ITEMS' || _isExcludedFromReturn(k)) return;
+            counts[k] = (counts[k] || 0) + 1;
+        });
+        return counts;
+    }
+
+    function _returnRefundCountsToList(counts) {
+        return Object.keys(counts || {}).sort().map(function(k){
+            return k + ' x' + (counts[k] || 0);
+        });
+    }
+
+    function buildReturnRefundAlreadyScannedMessage(result) {
+        const bad = (result && result.bad) ? result.bad : [];
+        const allowed = (result && result.allowed) ? result.allowed : [];
+        let msg = 'Este ID ja tinha produtos picados num fecho anterior (INCOMPLETO ou botao especial).\n\n';
+        msg += 'Nesta nova picagem so podes picar apenas os produtos/quantidades que ficaram em falta.\n\n';
+        if(bad.length){
+            msg += 'Produto/quantidade ja picado anteriormente ou acima do que falta:\n';
+            bad.forEach(function(x){
+                msg += '- ' + x.product + ': picado agora ' + x.current + ', falta apenas ' + x.remaining + ' (ja tinha ' + x.previous + ' de ' + x.expected + ')\n';
+            });
+            msg += '\n';
+        }
+        if(allowed.length){
+            msg += 'Ainda podes picar:\n- ' + allowed.join('\n- ') + '\n\n';
+        } else {
+            msg += 'Neste momento nao ha produtos em falta para este ID.\n\n';
+        }
+        msg += 'Remove o produto errado no botao X antes de fechar como COMPLETO, INCOMPLETO ou com botao especial.';
+        return msg;
+    }
+
+    async function checkReturnRefundOnlyRemainingProducts(mode, opts) {
+        const m = mode || currentMode;
+        if(!scanData || !scanData.id) return { ok: true };
+        if(!hasCurrentReturnRefundProducts()) return { ok: true };
+        if(!opts || opts.skipRefresh !== true) await refreshPreviousIncompleteProducts(m);
+
+        const prev = (scanData && Array.isArray(scanData._prevIncompleteProds)) ? scanData._prevIncompleteProds : [];
+        if(!prev.length) return { ok: true };
+
+        const packOnly = await checkReturnVsPacking(scanData.id, []);
+        if(!packOnly || !packOnly.found) return { ok: true };
+
+        const packedCounts = _returnRefundRelevantCounts(packOnly.packedRelevant || packOnly.packedProds || []);
+        const prevCounts = _returnRefundRelevantCounts(prev);
+        const currentCounts = _returnRefundRelevantCounts(scanData.prods || []);
+
+        const allowed = [];
+        Object.keys(packedCounts).sort().forEach(function(k){
+            const remaining = Math.max(0, (packedCounts[k] || 0) - (prevCounts[k] || 0));
+            if(remaining > 0) allowed.push(k + ' x' + remaining);
+        });
+
+        const bad = [];
+        Object.keys(currentCounts).sort().forEach(function(k){
+            const expected = packedCounts[k] || 0;
+            const previous = prevCounts[k] || 0;
+            const remaining = Math.max(0, expected - previous);
+            const current = currentCounts[k] || 0;
+            if(current > remaining){
+                bad.push({ product: k, current: current, remaining: remaining, previous: previous, expected: expected });
+            }
+        });
+
+        if(!bad.length) return { ok: true, allowed: allowed, check: packOnly };
+        const result = { ok: false, bad: bad, allowed: allowed, packedCounts: packedCounts, prevCounts: prevCounts, currentCounts: currentCounts, check: packOnly };
+        result.message = buildReturnRefundAlreadyScannedMessage(result);
+        return result;
+    }
+
+    function showReturnRefundBlockModal(title, message) {
+        let modal = document.getElementById('return-refund-block-modal');
+        if(!modal){
+            modal = document.createElement('div');
+            modal.id = 'return-refund-block-modal';
+            modal.style.cssText = 'display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9600; justify-content:center; align-items:center; padding:18px;';
+            const box = document.createElement('div');
+            box.style.cssText = 'background:white; border-radius:26px; width:100%; max-width:620px; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.55); text-align:center; border:6px solid #ef4444;';
+            const head = document.createElement('div');
+            head.style.cssText = 'background:#ef4444; padding:28px 20px; color:white;';
+            const icon = document.createElement('div');
+            icon.style.cssText = 'font-size:64px; line-height:1;';
+            icon.textContent = '⛔';
+            const ttl = document.createElement('div');
+            ttl.id = 'return-refund-block-title';
+            ttl.style.cssText = 'font-size:34px; font-weight:1000; margin-top:12px; text-transform:uppercase; letter-spacing:1px; line-height:1.08;';
+            head.appendChild(icon);
+            head.appendChild(ttl);
+            const body = document.createElement('div');
+            body.style.cssText = 'padding:28px 24px;';
+            const msg = document.createElement('div');
+            msg.id = 'return-refund-block-message';
+            msg.style.cssText = 'font-size:20px; font-weight:900; color:#1e293b; line-height:1.35; white-space:pre-wrap; text-align:left;';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = 'OK, CORRIGIR';
+            btn.style.cssText = 'margin-top:26px; width:100%; padding:24px 20px; font-size:26px; font-weight:1000; background:#ef4444; color:white; border:none; border-radius:18px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;';
+            btn.onclick = function(){
+                modal.style.display = 'none';
+                const inp = getActiveScanInput();
+                if(inp) inp.focus();
+            };
+            body.appendChild(msg);
+            body.appendChild(btn);
+            box.appendChild(head);
+            box.appendChild(body);
+            modal.appendChild(box);
+            document.body.appendChild(modal);
+        }
+        const titleEl = document.getElementById('return-refund-block-title');
+        const msgEl = document.getElementById('return-refund-block-message');
+        if(titleEl) titleEl.textContent = title || 'PRODUTO JA PICADO';
+        if(msgEl) msgEl.textContent = message || '';
+        modal.style.display = 'flex';
+    }
+
+    async function maybeShowReturnRefundPartialBlock(mode) {
+        const res = await checkReturnRefundOnlyRemainingProducts(mode);
+        if(!scanData) return res;
+        if(!res || res.ok){
+            scanData._lastReturnRefundPartialBlockKey = '';
+            return res;
+        }
+        const key = JSON.stringify((res.bad || []).map(function(x){ return [x.product, x.current, x.remaining, x.previous, x.expected]; }));
+        if(scanData._lastReturnRefundPartialBlockKey !== key){
+            scanData._lastReturnRefundPartialBlockKey = key;
+            showReturnRefundBlockModal('PRODUTO JA PICADO', res.message);
+        }
+        return res;
+    }
+
     function buildReturnRefundBlockMessage(check, closeType) {
         let msg = `Não é possível fechar este ${closeType || 'registo'}.`;
         if (check && check.extraProds && check.extraProds.length) {
@@ -1527,6 +1666,10 @@ Faltam produtos do Packing:
         }
 
         await refreshPreviousIncompleteProducts(m);
+        const remainingCheck = await checkReturnRefundOnlyRemainingProducts(m, { skipRefresh: true });
+        if (remainingCheck && !remainingCheck.ok) {
+            return { ok: false, check: remainingCheck.check, message: remainingCheck.message };
+        }
         const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
 
         // If there is no PACKING history, allow closing (as requested), as long as a product was scanned.
@@ -1582,6 +1725,7 @@ Faltam produtos do Packing:
 
     // ===== PARTIAL RETURN DETECTION =====
     // Checks if this ID already has an INCOMPLETE return/refund record.
+    // For REFUNDS, also treats special button closures WITH PRODUCTS as previous locked products.
     // Returns { found: bool, records: [], allPrevProds: string[], latestRec: obj|null }
     async function checkExistingIncomplete(orderId, mode) {
         if (!orderId) return { found: false, records: [], allPrevProds: [], latestRec: null };
@@ -1599,8 +1743,12 @@ Faltam produtos do Packing:
                 const m = (r.mode || '').toString().toUpperCase();
                 if (isRet && !_isReturnMode(m)) return;
                 if (isRef && !_isRefundMode(m)) return;
-                if ((r.returnStatus || '').toUpperCase() !== 'INCOMPLETE') return;
-                matched.push({ key: k, ...r });
+                const st = (r.returnStatus || '').toString().toUpperCase();
+                const isIncomplete = st === 'INCOMPLETE';
+                const isRefundSpecialWithProducts = isRef && r.specialCloseWithProducts === true &&
+                    ['SWIPE','NO_PRODUCT','PRODUCT_DAMAGED','BOX_DAMAGED','NO_PRODUCT_DAMAGED'].includes(st);
+                if (!isIncomplete && !isRefundSpecialWithProducts) return;
+                matched.push({ key: k, ...r, _lockReason: isIncomplete ? 'INCOMPLETE' : 'SPECIAL_REFUND' });
             });
 
             if (!matched.length) return { found: false, records: [], allPrevProds: [], latestRec: null };
@@ -1608,7 +1756,7 @@ Faltam produtos do Packing:
             // Sort by ts ascending so we accumulate in order
             matched.sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
-            // Gather ALL previously scanned products across all INCOMPLETE records
+            // Gather ALL previously scanned products across all INCOMPLETE/special-with-products records
             const allPrevProds = [];
             matched.forEach(r => {
                 const prods = (r.prods || '').split(' | ').map(p => p.trim()).filter(Boolean);
@@ -1672,14 +1820,14 @@ Faltam produtos do Packing:
 
         banner.style.display = 'block';
         banner.innerHTML = `
-            <div class="pbanner-title">⚠️ JÁ PICADO COMO INCOMPLETO (${nRecs}x)</div>
+            <div class="pbanner-title">⚠️ JÁ EXISTE PICAGEM ANTERIOR (${nRecs}x)</div>
             <div class="pbanner-prev-label">🗂️ Produtos de picagem(ns) anterior(es):</div>
             <div class="pbanner-prods">${prevProdsHtml}</div>
             <div class="pbanner-prev-label" style="margin-top:8px;">🆕 Produtos picados agora (nova sessão):</div>
             <div class="pbanner-prods">${newProdsHtml}</div>
             ${allCombined.length ? `<div class="pbanner-prev-label" style="margin-top:8px;">🔗 Total combinado (anterior + novo):</div><div class="pbanner-prods">${combinedHtml}</div>` : ''}
             <div class="pbanner-times">Último registo: ${latestUser}${latestTime ? ' às ' + latestTime : ''}</div>
-            <div class="pbanner-summary">ℹ️ Ao fechar, os produtos anteriores e os novos ficam todos no histórico.</div>
+            <div class="pbanner-summary">ℹ️ Ao fechar, os produtos anteriores e os novos ficam todos no histórico. Só podes picar produtos/quantidades ainda em falta.</div>
         `;
     }
     // ===== END PARTIAL RETURN DETECTION =====
@@ -1797,6 +1945,18 @@ Faltam produtos do Packing:
         }
 
         await refreshPreviousIncompleteProducts(m);
+        const remainingCheck = await checkReturnRefundOnlyRemainingProducts(m, { skipRefresh: true });
+        if (remainingCheck && !remainingCheck.ok) {
+            hideButtons();
+            const packedHtml = remainingCheck.check ? _renderPackedProdsHtml(remainingCheck.check.packedProds) : '';
+            if (statusEl) {
+                statusEl.style.background = '#fef2f2';
+                statusEl.style.color = '#991b1b';
+                statusEl.style.border = '1px solid #fecaca';
+                statusEl.innerHTML = '⛔ Produto/quantidade ja picado anteriormente.<br><small>Remove o produto errado no botao X antes de fechar como COMPLETO ou INCOMPLETO.</small><br><pre style="white-space:pre-wrap; font-family:inherit; font-size:13px; margin-top:8px;">' + _fmt(remainingCheck.message) + '</pre>' + packedHtml;
+            }
+            return;
+        }
         const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
 
         if (!check.found) {
@@ -1864,6 +2024,23 @@ Faltam produtos do Packing:
         const specialHasProducts = hasCurrentReturnRefundProducts();
         const specialProducts = specialHasProducts ? scanData.prods.join(' | ') : label;
 
+        // Refunds closed with special buttons follow the same partial-product rule:
+        // if this ID already had products closed as INCOMPLETE or with another special button,
+        // the operator can only scan the products/quantities still missing from PACKING.
+        if (specialHasProducts) {
+            await refreshPreviousIncompleteProducts(m);
+            const remainingCheck = await checkReturnRefundOnlyRemainingProducts(m, { skipRefresh: true });
+            if (remainingCheck && !remainingCheck.ok) {
+                showReturnRefundBlockModal('PRODUTO JA PICADO', remainingCheck.message);
+                return;
+            }
+            const packingCheck = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
+            if (packingCheck && packingCheck.found && packingCheck.extraProds && packingCheck.extraProds.length) {
+                showReturnRefundBlockModal('PRODUTO ERRADO', buildReturnRefundBlockMessage(packingCheck, 'com botao especial'));
+                return;
+            }
+        }
+
         const workDc = _nowDateClean();
         const endTime = _nowTime();
         const endTs = Date.now();
@@ -1871,12 +2048,18 @@ Faltam produtos do Packing:
             const allTracks = (scanData.tracks && scanData.tracks.length > 0)
                 ? scanData.tracks.map(x => String(x || '').trim()).filter(Boolean)
                 : (scanData.track ? [scanData.track] : []);
+            const _prevSpecialProds = (specialHasProducts && scanData._prevIncompleteProds && scanData._prevIncompleteProds.length)
+                ? scanData._prevIncompleteProds
+                : [];
+            const _allSpecialCombinedProds = specialHasProducts ? [..._prevSpecialProds, ...scanData.prods] : [];
             const recordPayload = {
                 id: scanData.id,
                 track: allTracks[0] || '',
                 tracks: allTracks.join(' | '),
                 volumes: allTracks.length,
                 prods: specialProducts,
+                prevProds: _prevSpecialProds.join(' | ') || '',
+                allProds: _allSpecialCombinedProds.join(' | ') || '',
                 mode: m,
                 returnStatus: status,
                 refundReason: label,
@@ -2234,6 +2417,7 @@ Faltam produtos do Packing:
         } catch(e) {}
         ['rv-partial-banner', 'fv-partial-banner'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; });
         scanData._prevIncompleteProds = [];
+        scanData._lastReturnRefundPartialBlockKey = '';
         refreshConfirmBtn(); 
         const inp = getActiveScanInput(); if(inp) { inp.value = ""; inp.focus(); }
     }
@@ -3596,7 +3780,10 @@ function updateDashboardStats(all, fD, prepackCount) {
         // RETURNS/REFUNDS need to re-check COMPLETE vs INCOMPLETE after removing a product.
         if (_isReturnMode(currentMode) || _isRefundMode(currentMode)) {
             updateReturnRefundStatus(currentMode);
-            if (scanData.id) checkAndShowPartialBanner(currentMode);
+            if (scanData.id) {
+                checkAndShowPartialBanner(currentMode);
+                maybeShowReturnRefundPartialBlock(currentMode);
+            }
         }
         if ((currentMode || '') === 'PACKING') {
             updatePackingGuidance();
