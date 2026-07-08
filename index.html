@@ -809,8 +809,8 @@
         <div class="nav-bar">
             <div id="menu-items" style="display:flex;"></div>
             <div style="display:flex; align-items:center; gap:8px; margin-right:10px;">
-                <span id="flag-pt" onclick="setLang('pt')" title="Português" style="font-size:26px; cursor:pointer; transition:opacity 0.2s;">🇵🇹</span>
-                <span id="flag-en" onclick="setLang('en')" title="English" style="font-size:26px; cursor:pointer; opacity:0.35; transition:opacity 0.2s;">🇬🇧</span>
+                <img id="flag-pt" onclick="setLang('pt')" title="Português" src="https://flagcdn.com/w40/pt.png" width="32" height="22" style="cursor:pointer; border-radius:3px; transition:opacity 0.2s; border:1px solid #ccc;" alt="PT">
+                <img id="flag-en" onclick="setLang('en')" title="English" src="https://flagcdn.com/w40/gb.png" width="32" height="22" style="cursor:pointer; border-radius:3px; opacity:0.35; transition:opacity 0.2s; border:1px solid #ccc;" alt="EN">
             </div>
             <button onclick="logout()"
                 style="color:var(--error); border:none; background:none; cursor:pointer; font-weight:900; font-size:14px;">LOGOUT</button>
@@ -2522,7 +2522,7 @@ Faltam produtos do Packing:
                         statusEl.style.background = '#eff6ff';
                         statusEl.style.color = '#1d4ed8';
                         statusEl.style.border = '1px solid #bfdbfe';
-                        statusEl.innerHTML = 'ℹ️ Pica o ID. COMPLETO/INCOMPLETO precisam de ID + tracking + produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.';
+                        statusEl.innerHTML = _t('ℹ️ Pica o ID. COMPLETO/INCOMPLETO precisam de ID + tracking + produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.');
                     } else {
                         statusEl.style.display = 'none';
                     }
@@ -3037,7 +3037,7 @@ Faltam produtos do Packing:
                         refundStatus.style.background = '#eff6ff';
                         refundStatus.style.color = '#1d4ed8';
                         refundStatus.style.border = '1px solid #bfdbfe';
-                        refundStatus.innerHTML = 'ℹ️ Pica o ID. COMPLETO/INCOMPLETO precisam de ID + tracking + produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.';
+                        refundStatus.innerHTML = _t('ℹ️ Pica o ID. COMPLETO/INCOMPLETO precisam de ID + tracking + produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.');
                     }
                 }
             } catch (e) { }
@@ -4983,6 +4983,7 @@ Missing: ${sample}${more}`);
                 'Erro ao finalizar picking. Ver consola.': 'Error finishing picking. See console.',
                 'A apagar registo...': 'Deleting record...',
                 'A recolher': 'Picking',
+                '\u2139\uFE0F Pica o ID. COMPLETO/INCOMPLETO precisam de ID + tracking + produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.': '\u2139\uFE0F Scan the ID. COMPLETE/INCOMPLETE require ID + tracking + product. SWIPE / NO PRODUCT / DAMAGED PRODUCT / DAMAGED BOX can close with ID only.',
                 // Batch complete modal dynamic
                 'Lote:': 'Batch:',
             }
