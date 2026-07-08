@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WH-MURTEDE LOGISTICS - V95 TOTAL CONTROL</title>
 
-    
-    <script src="https:
-    <script src="https:
-    <script src="https:
-    
-    <script src="https:
+    <!-- SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- EXCEL EXPORT LIBRARY -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -41,7 +41,7 @@
             font-size: 16px;
         }
 
-        
+        /* LOGIN */
         #login-screen {
             position: fixed;
             inset: 0;
@@ -74,7 +74,7 @@
             box-sizing: border-box;
         }
 
-        
+        /* NAVBAR */
         .nav-bar {
             background: #fff;
             display: flex;
@@ -125,7 +125,7 @@
             display: block;
         }
 
-        
+        /* DASHBOARD */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -156,7 +156,7 @@
             color: #7f8c8d;
         }
 
-        
+        /* KANBAN OVERVIEW */
         .mgmt-wrapper {
             display: flex;
             gap: 30px;
@@ -207,7 +207,7 @@
             transition: width 0.5s;
         }
 
-        
+        /* BUTTONS */
         .btn-mobile-op {
             width: 100%;
             padding: 20px;
@@ -273,7 +273,7 @@
             font-size: 16px;
         }
 
-        
+        /* MODALS */
         .modal {
             display: none;
             position: fixed;
@@ -407,7 +407,7 @@
             border: 1px solid #f87171;
         }
 
-        
+        /* ✅ CANCELLED IDs (red strike) */
         .cancelled-id {
             color: var(--error);
             font-weight: 900;
@@ -420,7 +420,7 @@
             background: #fff5f5;
         }
 
-        
+        /* PARTIAL RETURN BANNER */
         .partial-return-banner {
             display: none;
             background: linear-gradient(135deg, #fff7ed, #fef3c7);
@@ -504,7 +504,7 @@
             margin-top: 4px;
         }
 
-        
+        /* ===== PACKING FLOW GUIDED AUTO COMPLETE ===== */
         .packing-guide-card {
             margin: 0 0 16px 0;
             border: 3px solid var(--accent);
@@ -588,7 +588,7 @@
             color: #334155;
         }
 
-        
+        /* ===== MOBILE RESPONSIVE ===== */
         @media (max-width: 768px) {
             .nav-bar {
                 padding: 0 8px;
@@ -670,7 +670,7 @@
         </div>
     </div>
 
-    
+    <!-- MODAL: VOLUMES ALERT -->
     <div id="volumes-alert-modal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; justify-content:center; align-items:center; padding:20px;">
         <div
@@ -692,7 +692,7 @@
         </div>
     </div>
 
-    
+    <!-- MODAL: PACKING BATCH COMPLETE - SMARTPHONE LARGE MESSAGE -->
     <div id="packing-complete-modal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:9500; justify-content:center; align-items:center; padding:18px;">
         <div
@@ -722,7 +722,7 @@
         </div>
     </div>
 
-    
+    <!-- MODAL: PACKING ERROR - SMARTPHONE LARGE MESSAGE -->
     <div id="packing-error-modal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9400; justify-content:center; align-items:center; padding:18px;">
         <div
@@ -748,7 +748,7 @@
         </div>
     </div>
 
-    
+    <!-- MODAL: DETALHES DO LOTE -->
     <div id="edit-batch-modal" class="modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -793,7 +793,7 @@
         </div>
     </div>
 
-    
+    <!-- MODAL: ID HISTORY -->
     <div id="id-history-modal" class="modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
@@ -881,7 +881,7 @@
 
         <div class="container">
 
-            
+            <!-- SECTION: OVERVIEW -->
             <div id="sec-overview" class="section">
                 <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
                     <h2 style="margin:0;" data-i18n="WAREHOUSE_OVERVIEW">🌍 Visão Geral do Armazém</h2>
@@ -908,7 +908,7 @@
                 <div id="mgmt-container" class="mgmt-wrapper"></div>
             </div>
 
-            
+            <!-- SECTION: SEARCH (ID HISTORY) -->
             <div id="sec-search" class="section">
                 <div class="card">
                     <h2 data-i18n="DEEP_SEARCH">🔍 Pesquisa Detalhada de Encomendas</h2>
@@ -965,7 +965,7 @@
             </div>
         </div>
 
-        
+        <!-- SECTION: PERFORMANCE -->
         <div id="sec-performance" class="section">
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
@@ -989,7 +989,7 @@
             </div>
         </div>
 
-        
+        <!-- SECTION: REPORTS (EXCEL EXPORT) -->
         <div id="sec-reports" class="section">
             <div class="card">
                 <h2 data-i18n="REPORTS_TITLE">📁 Relatórios e Exportações Excel</h2>
@@ -1016,7 +1016,7 @@
             </div>
         </div>
 
-        
+        <!-- SECTION: PICKING -->
         <div id="sec-picking" class="section">
             <div class="card">
                 <h2 data-i18n="PICKING_PHASE">🧺 Fase de PICKING</h2>
@@ -1057,7 +1057,7 @@
             </div>
         </div>
 
-        
+        <!-- SECTION: PACKING -->
         <div id="sec-warehouse" class="section">
             <div class="grid-2">
                 <div class="card">
@@ -1133,7 +1133,7 @@
             </div>
         </div>
 
-        
+        <!-- SECTION: RETURNS -->
         <div id="sec-returns" class="section">
             <div class="card scan-area" style="text-align:center;">
                 <h2 data-i18n="RETURNS_SCANNER">🔄 SCANNER DEVOLUÇÕES</h2>
@@ -1176,7 +1176,7 @@
             </div>
         </div>
 
-        
+        <!-- SECTION: REFUNDS -->
         <div id="sec-refunds" class="section">
             <div class="card scan-area" style="text-align:center;">
                 <h2 data-i18n="REFUNDS_SCANNER">💸 SCANNER REEMBOLSOS</h2>
@@ -1231,7 +1231,7 @@
             </div>
         </div>
 
-        
+        <!-- OTHERS -->
         <div id="sec-prepack" class="section">
             <div class="card" style="text-align:center;">
                 <h2>📦 PRE-PACKING</h2><input type="text" id="prepack-input" placeholder="SCAN..."
@@ -1292,7 +1292,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyDExvgmtrSILCATQgE8ICJX-SVntb5lM2Y",
             authDomain: "wh-murtede.firebaseapp.com",
-            databaseURL: "https:
+            databaseURL: "https://wh-murtede-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "wh-murtede",
             storageBucket: "wh-murtede.firebasestorage.app",
             messagingSenderId: "415946575714",
@@ -1301,12 +1301,10 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth(), db = firebase.database();
 
-        
         let currentUser = null, scanData = { id: "", track: "", tracks: [], prods: [], startTime: "", endTime: "", startTs: null, endTs: null };
         let isAdminUser = false;
         let masterProductsDB = {}, currentMode = "PACKING", activeBatchData = null, activeBatchPath = null;
 
-        
         let __cfgBound = false;
         let __overviewBatchesRef = null, __overviewBatchesCb = null;
         let __overviewPrepackRef = null, __overviewPrepackCb = null;
@@ -1326,11 +1324,7 @@
         function _isReturnMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'RETURN' || m === 'RETURNS' || m === 'RETURNED'; }
         function _isRefundMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'REFUND' || m === 'REFUNDS' || m === 'REFUNDED'; }
 
-        
-        
-        
-        
-        window.WH_SHEETS_WEB_APP_URL = 'https:
+        window.WH_SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzr8b1fDe28HCRXjQHJK8QekR3b1uMp2FXsJS09cGtw4nd53wpQJZeC3KoRgdGjKXJG/exec';
 
         function whSheetsConfigured() {
             return !!(window.WH_SHEETS_WEB_APP_URL && String(window.WH_SHEETS_WEB_APP_URL).trim());
@@ -1373,8 +1367,6 @@
             const status = String(record.returnStatus || '').trim().toUpperCase();
             const reason = String(record.refundReason || '').trim().toUpperCase();
 
-            
-            
             if (record.specialNoTracking === true || record.specialCloseWithProducts !== undefined || reason) return true;
 
             return status === 'SWIPE' ||
@@ -1421,13 +1413,11 @@
         async function deleteReturnRefundRecord(regKey, mode) {
             if (!regKey) return;
             if (!confirm('Apagar este registo?')) return;
-            
-            
+
             try { await whSheetsSendReturnRefundDelete(regKey, mode); } catch (e) { console.warn(e); }
             return db.ref('registos/' + regKey).remove();
         }
 
-        
         function getRequiredBatchIds(batch) {
             const expected = (batch && batch.expected_ids) ? batch.expected_ids : [];
             const cancelled = (batch && batch.cancelled_ids) ? Object.keys(batch.cancelled_ids) : [];
@@ -1523,7 +1513,7 @@
         }
 
         function tab(id, el) {
-            
+
             if (!isAdminUser) {
                 const allowed = ['sec-picking', 'sec-prepack', 'sec-returns', 'sec-refunds', 'sec-warehouse'];
                 if (!allowed.includes(id)) {
@@ -1537,7 +1527,6 @@
             document.getElementById(id).classList.add('active');
             if (el) el.classList.add('active');
 
-            
             if (id === 'sec-picking') {
                 try {
                     const gd = document.getElementById('global-date-filter');
@@ -1548,7 +1537,7 @@
 
             if (id === 'sec-warehouse') {
                 currentMode = 'PACKING';
-                
+
                 try {
                     const gd = document.getElementById('global-date-filter');
                     const pa = document.getElementById('pack-date-filter');
@@ -1571,13 +1560,11 @@
 
         function logout() { auth.signOut(); localStorage.removeItem('lastPackingBatch'); }
 
-        
         async function exportData(type) {
             const start = document.getElementById('rep-start-date').value;
             const end = document.getElementById('rep-end-date').value;
             const dataToExport = [];
 
-            
             const inRange = (d) => (d && d >= start && d <= end);
 
             if (type === 'ACTIVITY') {
@@ -1605,8 +1592,7 @@
                 });
 
             } else if (type === 'CARRIERS') {
-                
-                
+
                 const [batchSnap, regSnap] = await Promise.all([
                     db.ref('active_batches').once('value'),
                     db.ref('registos').once('value')
@@ -1615,13 +1601,12 @@
                 const batches = batchSnap.val() || {};
                 const registos = regSnap.val() || {};
 
-                
                 const packIndex = {};
                 Object.values(registos).forEach(r => {
                     if (r && r.mode === 'PACKING' && r.batch && r.id) {
                         if (!packIndex[r.batch]) packIndex[r.batch] = {};
                         const prev = packIndex[r.batch][r.id];
-                        
+
                         const curKey = (r.dateClean || "") + " " + (r.endTime || r.time || "");
                         const prevKey = prev ? ((prev.dateClean || "") + " " + (prev.endTime || prev.time || "")) : "";
                         if (!prev || curKey > prevKey) packIndex[r.batch][r.id] = r;
@@ -1642,7 +1627,6 @@
                         const cancelInfo = cancelled[orderId] || null;
                         const packRec = (packIndex[batchKey] && packIndex[batchKey][orderId]) ? packIndex[batchKey][orderId] : null;
 
-                        
                         let status = "PENDING";
                         if (cancelInfo) status = "CANCELLED";
                         else if (packRec) status = "PACKED";
@@ -1685,26 +1669,21 @@
             XLSX.writeFile(wb, `WH_Export_${type}_${start}_to_${end}.xlsx`);
         }
 
-        
         function _normName(s) {
             return String(s || "").trim().replace(/\s+/g, ' ').toUpperCase();
         }
 
         function parseExpectedContent(contentStr) {
-            
-            
-            
+
             const out = {};
             const raw = String(contentStr || "").trim();
             if (!raw) return out;
 
-            
             const parts = raw.split(/\s*(\||;|,)\s*/).filter(x => x && x !== '|' && x !== ';' && x !== ',');
             parts.forEach(seg => {
                 const s = String(seg || "").trim();
                 if (!s) return;
 
-                
                 const m = s.match(/^(.*?)(?:\s*x\s*|\s+)(\d+)\s*$/i);
                 if (!m) return;
 
@@ -1728,7 +1707,7 @@
         }
 
         function packingMeetsExpected() {
-            
+
             if (!activeBatchData || !activeBatchData.order_details || !scanData.id) {
                 return { ok: true, missing: [], extra: [] };
             }
@@ -1750,8 +1729,6 @@
                 if (got < need) missing.push(`${prod} (${got}/${need})`);
             });
 
-            
-            
             const extra = [];
             Object.keys(scanned).forEach(prod => {
                 const got = scanned[prod] || 0;
@@ -2088,7 +2065,7 @@
                 if (!scanData.tracks.includes(v)) {
                     scanData.tracks.push(v);
                 }
-                scanData.track = scanData.tracks[0];
+                scanData.track = scanData.tracks[0]; // backwards compat
             }
             updateDisplay(m);
             refreshConfirmBtn();
@@ -2136,8 +2113,8 @@
                 scannedNorm.forEach(p => { countScanned[p] = (countScanned[p] || 0) + 1; });
 
                 const allKeys = new Set([...Object.keys(countPacked), ...Object.keys(countScanned)]);
-                const missingProds = [];
-                const extraProds = [];
+                const missingProds = []; // in packed but not (fully) returned
+                const extraProds = [];   // returned but not in packed
 
                 allKeys.forEach(k => {
                     const need = countPacked[k] || 0;
@@ -2989,7 +2966,7 @@ Faltam produtos do Packing:
                     endTime: endTime,
                     startTs: (typeof scanData.startTs === 'number') ? scanData.startTs : null,
                     endTs: endTs,
-                    time: endTime,
+                    time: endTime, // Main sorting time
 
                     dateClean: dc,
                     DateTime: _dtKey(dc, endTime),
@@ -3054,7 +3031,7 @@ Faltam produtos do Packing:
         function _fmt(val) { return (val === undefined || val === null) ? "" : String(val); }
 
         function _nowDateClean() {
-            return new Date().toISOString().slice(0, 10);
+            return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
         }
 
         function _nowTime() {
@@ -3065,7 +3042,7 @@ Faltam produtos do Packing:
         }
 
         function _dtKey(dateClean, timeStr) {
-            return (_fmt(dateClean) + " " + _fmt(timeStr)).trim();
+            return (_fmt(dateClean) + " " + _fmt(timeStr)).trim(); // YYYY-MM-DD HH:mm:ss
         }
 
         const _pickingInfoCache = {};
@@ -3278,7 +3255,6 @@ Faltam produtos do Packing:
             var title = document.getElementById('id-history-title');
             if (title) title.innerText = "ID History - " + id;
 
-            
             applyIdHistoryFilters();
 
             document.getElementById('id-history-modal').style.display = 'flex';
@@ -3317,17 +3293,16 @@ Faltam produtos do Packing:
             var filtered = allEvents.filter(function (ev) {
                 if (!_passesDate(ev.DateTime, start, end)) return false;
                 if (!_passesType(_fmt(ev.Type), typeF)) return false;
-                
+
                 if (statusF === "CANCELLED" && _fmt(ev.Type) !== "CANCELLED") return false;
                 if (statusF === "PACKED" && _fmt(ev.Type) !== "PACKING") return false;
                 if (statusF === "PENDING") {
-                    
+
                     if (_fmt(ev.Type) === "PACKING" || _fmt(ev.Type) === "CANCELLED") return false;
                 }
                 return true;
             });
 
-            
             var tbody = document.querySelector('#id-history-table tbody');
             if (tbody) tbody.innerHTML = "";
             filtered.forEach(function (ev) {
@@ -3344,7 +3319,6 @@ Faltam produtos do Packing:
                     + "</tr>";
             });
 
-            
             _renderTimeline(filtered);
         }
 
@@ -3414,7 +3388,7 @@ Faltam produtos do Packing:
             var regPromise, batchPromise;
 
             if (searchAll) {
-                
+
                 if (!confirm("SEARCH ALL RECORDS pode demorar. Continuar?")) {
                     if (container) container.innerHTML = "<div class='card' style='grid-column: 1 / -1;'><b>Search cancelled.</b></div>";
                     return;
@@ -3422,7 +3396,7 @@ Faltam produtos do Packing:
                 regPromise = db.ref('registos').once('value');
                 batchPromise = db.ref('active_batches').once('value');
             } else {
-                
+
                 var regRef = db.ref('registos');
                 if (start && end) regRef = regRef.orderByChild('dateClean').startAt(start).endAt(end);
                 else regRef = regRef.orderByChild('dateClean');
@@ -3445,7 +3419,6 @@ Faltam produtos do Packing:
                 var events = [];
                 var summary = { status: "PENDING" };
 
-                
                 Object.entries(batchData).forEach(function (entry) {
                     var k = entry[0], b = entry[1];
                     if (!b) return;
@@ -3509,13 +3482,12 @@ Faltam produtos do Packing:
                     }
                 });
 
-                
                 Object.values(regData).forEach(function (r) {
                     if (!r || r.id !== sid) return;
                     if (r.mode !== 'PACKING' && !_isReturnMode(r.mode) && !_isRefundMode(r.mode)) return;
 
                     var batchKey = r.batch || "GENERAL";
-                    
+
                     var b = batchData[batchKey] || {};
                     var batchName = b.name || batchKey;
                     var carrier = b.carrier || "N/A";
@@ -3602,7 +3574,7 @@ Faltam produtos do Packing:
 
         function openEditModal(batchId, readOnly = false) {
             if (!batchId) return;
-            
+
             if (__modalBatchRef && __modalBatchCb) { __modalBatchRef.off('value', __modalBatchCb); }
             __modalBatchRef = db.ref('active_batches/' + batchId);
             __modalBatchCb = (snap) => {
@@ -3677,8 +3649,7 @@ Faltam produtos do Packing:
         }
 
         function loadBatchData(bId) {
-            
-            
+
             if (!bId) {
                 localStorage.removeItem('lastPackingBatch');
                 if (activeBatchPath) db.ref(activeBatchPath).off();
@@ -3701,12 +3672,11 @@ Faltam produtos do Packing:
                     updatePackingGuidance();
                     return;
                 }
-                
-                
+
                 const oldVols = (activeBatchData && activeBatchData.order_volumes) || {};
                 const newVols = newData.order_volumes || {};
                 activeBatchData = newData;
-                
+
                 if (scanData && scanData.id && JSON.stringify(oldVols[scanData.id]) !== JSON.stringify(newVols[scanData.id])) {
                     console.warn('[PACKING] order_volumes actualizado para ID activo:', scanData.id, '->', newVols[scanData.id]);
                 }
@@ -3717,7 +3687,7 @@ Faltam produtos do Packing:
         }
 
         function updateProcessedTable(bId) {
-            
+
             if (__processedRegRef && __processedRegCb) { __processedRegRef.off('value', __processedRegCb); }
 
             __processedRegRef = db.ref('registos').orderByChild('batch').equalTo(bId).limitToLast(5000);
@@ -3735,7 +3705,6 @@ Faltam produtos do Packing:
                     rows.push({ key, r });
                 });
 
-                
                 rows.sort((a, b) => {
                     const ra = a.r || {}, rb = b.r || {};
                     const dta = (ra.DateTime || _dtKey(ra.dateClean || "", ra.endTime || ra.time || ""));
@@ -3767,7 +3736,7 @@ Faltam produtos do Packing:
 
             if (processedRequiredCount < requiredCount) {
                 const missing = requiredIds.filter(id => !processedMap[id]);
-                
+
                 const sample = missing.slice(0, 10).join(', ');
                 const more = missing.length > 10 ? ` (+${missing.length - 10} more)` : '';
                 return alert(`ERRO: Faltam ${requiredCount - processedRequiredCount} IDs (excluindo cancelados).
@@ -3785,7 +3754,6 @@ Missing: ${sample}${more}`);
         function loadPickingList() {
             const bId = document.getElementById('pick-batch-select').value; if (!bId) return;
 
-            
             const pickingUser = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : 'UNKNOWN';
             const pickingStarted = _nowDateTime();
             db.ref('active_batches/' + bId + '/pickingSession').set({
@@ -3813,7 +3781,6 @@ Missing: ${sample}${more}`);
                 return alert("ERRO: utilizador não autenticado.");
             }
 
-            
             try {
                 const statusSnap = await db.ref('active_batches/' + bId + '/status').once('value');
                 const currentStatus = String(statusSnap.val() || '').trim().toUpperCase();
@@ -3829,10 +3796,9 @@ Missing: ${sample}${more}`);
             const tm = _nowTime();
             const dt = _dtKey(dc, tm);
 
-            
             db.ref('active_batches/' + bId + '/status').set('READY_TO_PACK')
                 .then(() => {
-                    
+
                     const extra = [
                         db.ref('active_batches/' + bId).update({
                             pickedBy: pickedBy,
@@ -3840,9 +3806,9 @@ Missing: ${sample}${more}`);
                             pickedTime: tm,
                             pickedAt: dt
                         }),
-                        
+
                         db.ref('active_batches/' + bId + '/pickingSession').remove(),
-                        
+
                         db.ref(`active_batches/${bId}/history`).push({
                             dateClean: dc,
                             time: tm,
@@ -3851,7 +3817,7 @@ Missing: ${sample}${more}`);
                             user: pickedBy,
                             msg: "PICKING COMPLETE"
                         }),
-                        
+
                         db.ref('registos').push({
                             mode: "PICKING",
                             batch: bId,
@@ -3883,7 +3849,6 @@ Missing: ${sample}${more}`);
                     const tot = requiredIds.length, done = requiredIds.filter(id => (b.processed_ids && b.processed_ids[id])).length;
                     const perc = tot > 0 ? Math.round((done / tot) * 100) : 0;
 
-                    
                     let livePickHtml = '';
                     if (b.pickingSession && b.pickingSession.user) {
                         livePickHtml = `<div style="margin-top:6px; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:900; color:#856404;">
@@ -3892,12 +3857,11 @@ Missing: ${sample}${more}`);
                     </div>`;
                     }
 
-                    
                     let pickedHtml = '';
                     if (b.pickedBy) {
                         pickedHtml = `<div style="margin-top:6px; font-size:12px; color:#444;"><b>Picked by:</b> ${b.pickedBy}${b.pickedAt ? ` <span style="color:#666;">@ ${b.pickedAt}</span>` : ''}</div>`;
                     } else if (b.status === 'READY_TO_PACK' || b.status === 'COMPLETED') {
-                        
+
                         const cardId = 'picked-meta-' + b.id;
                         pickedHtml = `<div id="${cardId}" style="margin-top:6px; font-size:12px; color:#999;">A carregar quem recolheu...</div>`;
                         getPickingInfo(b.id).then(info => {
@@ -3928,8 +3892,7 @@ Missing: ${sample}${more}`);
 
         function __renderOverviewForDate(fD) {
             const bts = __overviewCacheBatches || {};
-            
-            
+
             autoCompleteOverviewBatchesIf100Percent(bts, fD);
             updateDashboardStats(bts, fD, __overviewCachePrepackCount);
             updatePickingMiniDashboard(bts, fD);
@@ -3941,7 +3904,6 @@ Missing: ${sample}${more}`);
             if (__cfgBound) return;
             __cfgBound = true;
 
-            
             db.ref('config/master_products').on('value', s => { masterProductsDB = s.val() || {}; });
             db.ref('config/carriers').on('value', s => {
                 const carriers = s.val() || ["CTT", "NACEX", "CORREOS"];
@@ -3953,14 +3915,12 @@ Missing: ${sample}${more}`);
             });
         }
 
-        
         function setPickingDate(d) {
             const gd = document.getElementById('global-date-filter');
             if (gd) gd.value = d;
             syncGlobalData();
         }
 
-        
         function setPackingDate(d) {
             const gd = document.getElementById('global-date-filter');
             if (gd) gd.value = d;
@@ -3981,9 +3941,8 @@ Missing: ${sample}${more}`);
             } catch (e) { }
             const today = _nowDateClean();
 
-            
             if (fD === today) {
-                
+
                 if (!__overviewBatchesRef) {
                     __overviewBatchesRef = db.ref('active_batches');
                     __overviewBatchesCb = (snap) => {
@@ -3993,7 +3952,6 @@ Missing: ${sample}${more}`);
                     __overviewBatchesRef.on('value', __overviewBatchesCb);
                 }
 
-                
                 if (!__overviewPrepackRef) {
                     __overviewPrepackRef = db.ref('pre_packing').orderByChild('dateClean').equalTo(today);
                     __overviewPrepackCb = (snap) => {
@@ -4003,12 +3961,10 @@ Missing: ${sample}${more}`);
                     __overviewPrepackRef.on('value', __overviewPrepackCb);
                 }
 
-                
                 __renderOverviewForDate(fD);
                 return;
             }
 
-            
             __stopOverviewRealtime();
 
             try {
@@ -4033,14 +3989,14 @@ Missing: ${sample}${more}`);
                 document.getElementById('meta-cust-name').innerText = activeBatchData.order_details[id].name;
                 document.getElementById('meta-inv-content').innerText = activeBatchData.order_details[id].content;
             }
-            
+
             const vols = (activeBatchData.order_volumes && activeBatchData.order_volumes[id]) || 1;
             const badge = document.getElementById('meta-volumes-badge');
             if (badge) {
                 if (vols > 1) {
                     badge.style.display = 'block';
                     badge.textContent = `📦 ${vols} VOLUMES`;
-                    
+
                     const modal = document.getElementById('volumes-alert-modal');
                     const msg = document.getElementById('volumes-alert-msg');
                     if (modal && msg) {
@@ -4140,8 +4096,6 @@ Missing: ${sample}${more}`);
                 const savedWH = localStorage.getItem('lastPackingBatch') || '';
                 const wantedWH = prevWH || savedWH;
 
-                
-                
                 if (selWH.dataset.lastOptions !== whOpt) {
                     selWH.innerHTML = whOpt;
                     selWH.dataset.lastOptions = whOpt;
@@ -4151,7 +4105,6 @@ Missing: ${sample}${more}`);
                     selWH.value = wantedWH;
                     if (savedWH !== wantedWH) localStorage.setItem('lastPackingBatch', wantedWH);
 
-                    
                     if (activeBatchPath !== ('active_batches/' + wantedWH)) {
                         setTimeout(function () {
                             const currentValue = selWH.value;
@@ -4159,7 +4112,7 @@ Missing: ${sample}${more}`);
                         }, 0);
                     }
                 } else if (prevWH || savedWH) {
-                    
+
                     localStorage.removeItem('lastPackingBatch');
                     if (!selWH.value) loadBatchData('');
                 }
@@ -4518,7 +4471,7 @@ Missing: ${sample}${more}`);
     </script>
 
     <script>
-        
+
         (function () {
             var PROFILE = "OPS";
             var ALLOWED = ['sec-picking', 'sec-prepacking', 'sec-prepack', 'sec-returns', 'sec-refunds', 'sec-warehouse', 'sec-packing'];
@@ -4528,7 +4481,7 @@ Missing: ${sample}${more}`);
             }
 
             function hardRemoveNav() {
-                
+
                 var navItems = document.querySelectorAll(".nav-item, .nav-btn, .tab-btn, button, a");
                 navItems.forEach(function (el) {
                     var oc = el.getAttribute("onclick") || "";
@@ -4546,7 +4499,7 @@ Missing: ${sample}${more}`);
             }
 
             function forceAllowedTab() {
-                
+
                 var active = document.querySelector(".section.active");
                 if (active && !isAllowed(active.id)) active.classList.remove("active");
                 var ok = document.querySelector(".section.active");
@@ -4563,7 +4516,7 @@ Missing: ${sample}${more}`);
             }
 
             function lockTabFunction() {
-                
+
                 if (typeof window.tab === 'function' && !window.__tab_wrapped) {
                     var orig = window.tab;
                     window.tab = function (secId, el) {
@@ -4575,7 +4528,7 @@ Missing: ${sample}${more}`);
                     };
                     window.__tab_wrapped = true;
                 }
-                
+
                 ['switchSection', 'showSection'].forEach(function (fn) {
                     if (typeof window[fn] === 'function' && !window['__' + fn + '_wrapped']) {
                         var orig2 = window[fn];
@@ -4618,7 +4571,6 @@ Missing: ${sample}${more}`);
                 setTimeout(enforce, 1800);
             });
 
-            
             setInterval(function () {
                 var main = document.getElementById('main-interface');
                 if (main && main.style.display !== 'none') {
@@ -4629,7 +4581,7 @@ Missing: ${sample}${more}`);
     </script>
 
     <script>
-        
+
         (function () {
             function ensureErrorOverlay() {
                 if (document.getElementById('__err_overlay')) return;
@@ -4708,7 +4660,7 @@ Missing: ${sample}${more}`);
             }
 
             function bindAuthListener() {
-                
+
                 var authInst = null;
                 try { if (window.auth && auth.onAuthStateChanged) authInst = auth; } catch (_) { }
                 if (!authInst) {
@@ -4722,7 +4674,7 @@ Missing: ${sample}${more}`);
                 authInst.onAuthStateChanged(function (u) {
                     if (u && u.email) {
                         setBadge('__user_badge', 'User: ' + u.email);
-                        
+
                         var email = String(u.email).toLowerCase();
                         var role = (email.endsWith('@admin.com') ? 'ADMIN' : (email.endsWith('@wh.com') ? 'WH' : 'USER'));
                         setBadge('__role_badge', 'Role: ' + role, '#1f2937');
@@ -4757,7 +4709,7 @@ Missing: ${sample}${more}`);
                 ensureTopBar();
                 bindDbListener();
                 if (bindAuthListener()) return;
-                
+
             }
 
             document.addEventListener('DOMContentLoaded', function () {
@@ -4773,7 +4725,7 @@ Missing: ${sample}${more}`);
             });
         })();
 
-        
+        /* === SAVING NOTICE / DOUBLE-CLICK GUARD === */
         (function () {
             if (window.__whSavingGuardInstalled) return;
             window.__whSavingGuardInstalled = true;
@@ -4872,7 +4824,7 @@ Missing: ${sample}${more}`);
             wrapSaving('confirmRefundSwipe', 'A gravar refund SWIPE...');
             wrapSaving('deleteReturnRefundRecord', 'A apagar registo...');
         })();
-        
+        /* === END SAVING NOTICE / DOUBLE-CLICK GUARD === */
 
     </script>
 
