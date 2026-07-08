@@ -420,6 +420,7 @@
             background: #fff5f5;
         }
 
+
         /* PARTIAL RETURN BANNER */
         .partial-return-banner {
             display: none;
@@ -504,6 +505,7 @@
             margin-top: 4px;
         }
 
+
         /* ===== PACKING FLOW GUIDED AUTO COMPLETE ===== */
         .packing-guide-card {
             margin: 0 0 16px 0;
@@ -587,73 +589,6 @@
             border: 1px solid #cbd5e1;
             color: #334155;
         }
-
-        /* ===== MOBILE RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .nav-bar {
-                padding: 0 8px;
-                height: auto;
-                flex-wrap: wrap;
-                min-height: 56px;
-            }
-            #menu-items {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-                flex-wrap: nowrap;
-                width: 100%;
-                padding-bottom: 4px;
-            }
-            .nav-item {
-                padding: 14px 8px;
-                font-size: 10px;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            .container {
-                padding: 0 8px;
-                margin: 8px auto;
-            }
-            .dashboard-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-            .grid-2 {
-                grid-template-columns: 1fr !important;
-                gap: 15px;
-            }
-            .grid-3 {
-                grid-template-columns: 1fr !important;
-                gap: 10px;
-            }
-            .card { padding: 15px; }
-            .modal-content {
-                padding: 18px;
-                width: 98%;
-            }
-            .login-card { width: 95%; padding: 22px; }
-            .mgmt-wrapper { flex-direction: column; }
-            .carrier-column { min-width: 100%; max-width: 100%; }
-            table { font-size: 12px; }
-            table td, table th { padding: 7px 5px; }
-            input, textarea, select { font-size: 16px !important; }
-            #main-input, #return-input, #refund-input, #prepack-input {
-                font-size: 26px !important;
-                height: 70px !important;
-            }
-            .btn-mobile-op { font-size: 15px; padding: 15px; }
-            .packing-guide-title { font-size: 20px; }
-            .packing-guide-detail { font-size: 14px; }
-            .dash-card h2 { font-size: 34px; }
-            #sec-warehouse .grid-2 { grid-template-columns: 1fr !important; }
-            .lang-flags { gap: 4px; }
-            .lang-flag-btn { font-size: 20px !important; padding: 2px 3px !important; }
-            #__topbar { flex-wrap: wrap; gap: 6px; }
-        }
-        @media (max-width: 480px) {
-            .dash-card h2 { font-size: 26px; }
-            .dash-card p { font-size: 11px; }
-        }
-
     </style>
 </head>
 
@@ -663,10 +598,10 @@
         <h1>WH-MURTEDE</h1>
         <div class="login-card">
             <input type="email" id="login-email" placeholder="Email (@admin.com / @wh.com)">
-            <input type="password" id="login-pass" placeholder="Senha" data-i18n-placeholder="login_pass">
+            <input type="password" id="login-pass" placeholder="Password">
             <button
                 style="width:100%; background:var(--accent); color:white; border:none; padding:20px; border-radius:12px; cursor:pointer; font-weight:bold; font-size:20px;"
-                onclick="handleLogin()" data-i18n="SIGN_IN">ENTRAR</button>
+                onclick="handleLogin()">SIGN IN</button>
         </div>
     </div>
 
@@ -691,6 +626,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- MODAL: PACKING BATCH COMPLETE - SMARTPHONE LARGE MESSAGE -->
     <div id="packing-complete-modal"
@@ -722,6 +658,8 @@
         </div>
     </div>
 
+
+
     <!-- MODAL: PACKING ERROR - SMARTPHONE LARGE MESSAGE -->
     <div id="packing-error-modal"
         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:9400; justify-content:center; align-items:center; padding:18px;">
@@ -752,44 +690,44 @@
     <div id="edit-batch-modal" class="modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 id="edit-batch-title" style="font-size:30px; margin:0;"></h2>
+                <h2 id="edit-batch-title" style="font-size:30px; margin:0;">Batch Details</h2>
                 <button class="btn-small btn-delete" id="modal-delete-btn"
-                    style="padding:15px 30px; font-size:16px;" data-i18n="DELETE_BATCH">APAGAR LOTE INTEIRO</button>
+                    style="padding:15px 30px; font-size:16px;">DELETE ENTIRE BATCH</button>
             </div>
             <div id="edit-batch-meta" style="margin-top:10px; font-size:14px; color:#444;"></div>
             <hr style="margin:25px 0;">
             <div style="display:grid; grid-template-columns: 1fr 1.5fr; gap:30px;">
                 <div>
-                    <h4 data-i18n="INVENTORY_STATUS">📦 Estado do Inventário</h4>
+                    <h4>📦 Inventory Status</h4>
                     <div class="scroll-area">
                         <table id="edit-inventory-table">
                             <thead>
                                 <tr id="inv-header">
-                                    <th data-i18n="PRODUCT_TH">Produto</th>
-                                    <th data-i18n="QTY_TH">Qtd</th>
-                                    <th data-i18n="POS_TH">Pos</th>
-                                    <th class="admin-only-cell" data-i18n="DEL_TH">Apag</th>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Pos</th>
+                                    <th class="admin-only-cell">Del</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                     </div>
-                    <h4 data-i18n="MOD_LOG">📊 Registo de Modificações</h4>
+                    <h4>📊 Modification Log</h4>
                     <div id="qty-modification-log"
                         style="font-size:11px; background:#f8f9fa; padding:10px; border-radius:10px; height:200px; overflow-y:auto; border:1px solid #ddd; font-family: monospace;">
                     </div>
                 </div>
                 <div>
-                    <h4 data-i18n="ORDER_TRACKING">🆔 Mapeamento de Encomendas</h4>
+                    <h4>🆔 Order Mapping & Full Tracking</h4>
                     <div class="scroll-area" id="edit-ids-list"></div>
-                    <h4 style="margin-top:20px; color: var(--error);" data-i18n="CANCEL_LOG">🚫 Registo de Cancelamentos</h4>
+                    <h4 style="margin-top:20px; color: var(--error);">🚫 Cancellation Reasons Log</h4>
                     <div id="cancelled-ids-log"
                         style="font-size:11px; background:#fff5f5; padding:10px; border-radius:10px; height:150px; overflow-y:auto; border:1px solid #fab1a0; font-family: monospace;">
                     </div>
                 </div>
             </div>
             <button class="btn-submit" style="margin-top:35px; background: var(--primary);"
-                onclick="closeModal('edit-batch-modal')" data-i18n="CLOSE_WINDOW">FECHAR JANELA</button>
+                onclick="closeModal('edit-batch-modal')">CLOSE WINDOW</button>
         </div>
     </div>
 
@@ -797,27 +735,27 @@
     <div id="id-history-modal" class="modal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:15px;">
-                <h2 id="id-history-title" style="font-size:30px; margin:0;"></h2>
+                <h2 id="id-history-title" style="font-size:30px; margin:0;">ID History</h2>
                 <div style="display:flex; gap:10px; align-items:center;">
                     <button class="btn-small" style="background: var(--accent); padding: 14px 18px; font-size: 14px;"
-                        onclick="exportIdHistory()" data-i18n="EXPORT_THIS_ID">EXPORTAR ESTE ID</button>
+                        onclick="exportIdHistory()">EXPORT THIS ID</button>
                     <button class="btn-small btn-delete" style="padding: 14px 18px; font-size: 14px;"
-                        onclick="closeModal('id-history-modal')" data-i18n="CLOSE">FECHAR</button>
+                        onclick="closeModal('id-history-modal')">CLOSE</button>
                 </div>
             </div>
             <hr style="margin:20px 0;">
 
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 10px;">
                 <div style="min-width:180px; flex:1;">
-                    <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="START_LBL">Início</label>
+                    <label style="font-weight:900; font-size:12px; color:#666;">Start</label>
                     <input type="date" id="modal-start-date">
                 </div>
                 <div style="min-width:180px; flex:1;">
-                    <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="END_LBL">Fim</label>
+                    <label style="font-weight:900; font-size:12px; color:#666;">End</label>
                     <input type="date" id="modal-end-date">
                 </div>
                 <div style="min-width:220px; flex:1;">
-                    <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="TYPE_LBL">Tipo</label>
+                    <label style="font-weight:900; font-size:12px; color:#666;">Type</label>
                     <select id="modal-type-filter">
                         <option value="ALL">ALL</option>
                         <option value="OFFICE / BATCH_CREATED">OFFICE / BATCH_CREATED</option>
@@ -828,7 +766,7 @@
                     </select>
                 </div>
                 <div style="min-width:220px; flex:1;">
-                    <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="STATUS_LBL">Estado</label>
+                    <label style="font-weight:900; font-size:12px; color:#666;">Status</label>
                     <select id="modal-status-filter">
                         <option value="ALL">ALL</option>
                         <option value="PACKED">PACKED</option>
@@ -838,7 +776,7 @@
                 </div>
                 <div style="display:flex; align-items:flex-end;">
                     <button class="btn-small" style="background: var(--primary); padding: 14px 18px; font-size: 14px;"
-                        onclick="applyIdHistoryFilters()" data-i18n="APPLY">APLICAR</button>
+                        onclick="applyIdHistoryFilters()">APPLY</button>
                 </div>
             </div>
 
@@ -851,14 +789,14 @@
                 <table id="id-history-table">
                     <thead>
                         <tr>
-                            <th data-i18n="DATETIME">Data/Hora</th>
-                            <th data-i18n="TYPE_LBL">Tipo</th>
-                            <th data-i18n="BATCH_TH">Lote</th>
-                            <th data-i18n="CARRIER_TH">Transportadora</th>
-                            <th data-i18n="USER_TH">Utilizador</th>
-                            <th data-i18n="TRACKING_TH">Tracking</th>
-                            <th data-i18n="ITEMS_CONTENT">Artigos / Conteúdo</th>
-                            <th data-i18n="DETAILS_TH">Detalhes</th>
+                            <th>Date/Time</th>
+                            <th>Type</th>
+                            <th>Batch</th>
+                            <th>Carrier</th>
+                            <th>User</th>
+                            <th>Tracking</th>
+                            <th>Items / Content</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -870,13 +808,8 @@
     <div id="main-interface" style="display:none;">
         <div class="nav-bar">
             <div id="menu-items" style="display:flex;"></div>
-            <div style="display:flex; align-items:center; gap:10px;">
-            <div class="lang-flags" style="display:flex; gap:8px; align-items:center;">
-                <button class="lang-flag-btn" id="btn-lang-pt" onclick="applyLang('pt')" title="Português" style="background:none;border:2px solid #3498db;border-radius:8px;cursor:pointer;font-size:26px;padding:2px 6px;opacity:1;transition:opacity .2s;">🇵🇹</button>
-                <button class="lang-flag-btn" id="btn-lang-en" onclick="applyLang('en')" title="English" style="background:none;border:2px solid transparent;border-radius:8px;cursor:pointer;font-size:26px;padding:2px 6px;opacity:0.5;transition:opacity .2s;">🇬🇧</button>
-            </div>
-            <button onclick="logout()" style="color:var(--error); border:none; background:none; cursor:pointer; font-weight:900; font-size:14px;" data-i18n="LOGOUT">SAIR</button>
-        </div>
+            <button onclick="logout()"
+                style="color:var(--error); border:none; background:none; cursor:pointer; font-weight:900; font-size:14px;">LOGOUT</button>
         </div>
 
         <div class="container">
@@ -884,25 +817,25 @@
             <!-- SECTION: OVERVIEW -->
             <div id="sec-overview" class="section">
                 <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                    <h2 style="margin:0;" data-i18n="WAREHOUSE_OVERVIEW">🌍 Visão Geral do Armazém</h2>
+                    <h2 style="margin:0;">🌍 Warehouse Overview</h2>
                     <input type="date" id="global-date-filter" onchange="syncGlobalData()" style="width:220px;">
                 </div>
                 <div class="dashboard-grid">
                     <div class="dash-card">
                         <h2 id="card-printed">0</h2>
-                        <p data-i18n="TOTAL_PRINTED">Total Impresso</p>
+                        <p>Total Printed</p>
                     </div>
                     <div class="dash-card">
                         <h2 id="card-ready">0</h2>
-                        <p data-i18n="PENDING_PACKING">Pendente PACKING</p>
+                        <p>Pending Packing</p>
                     </div>
                     <div class="dash-card">
                         <h2 id="card-packed">0</h2>
-                        <p data-i18n="PACKED_TODAY">Embalado Hoje</p>
+                        <p>Packed Today</p>
                     </div>
                     <div class="dash-card">
                         <h2 id="card-prepack">0</h2>
-                        <p data-i18n="PREPACKED_TODAY">Pré-Embalado Hoje</p>
+                        <p>Pre-Packed Today</p>
                     </div>
                 </div>
                 <div id="mgmt-container" class="mgmt-wrapper"></div>
@@ -911,27 +844,28 @@
             <!-- SECTION: SEARCH (ID HISTORY) -->
             <div id="sec-search" class="section">
                 <div class="card">
-                    <h2 data-i18n="DEEP_SEARCH">🔍 Pesquisa Detalhada de Encomendas</h2>
-                    <p data-i18n="SEARCH_HINT">Cola IDs de encomendas para ver o histórico completo agrupado por ID.</p>
+                    <h2>🔍 Deep Order Search</h2>
+                    <p>Paste Order IDs to see full history grouped by ID.</p>
                     <textarea id="search-ids-input" rows="4" placeholder="12345678, 87654321"></textarea>
                     <div class="grid-2" style="margin-top: 10px;">
                         <div>
-                            <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="START_DATE">Data Início</label>
+                            <label style="font-weight:900; font-size:12px; color:#666;">Start Date</label>
                             <input type="date" id="search-start-date">
                         </div>
                         <div>
-                            <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="END_DATE">Data Fim</label>
+                            <label style="font-weight:900; font-size:12px; color:#666;">End Date</label>
                             <input type="date" id="search-end-date">
                         </div>
                     </div>
                     <div style="margin-top:10px; display:flex; align-items:center; gap:10px;">
                         <input type="checkbox" id="search-all-records" style="width:22px; height:22px;">
-                        <label for="search-all-records" style="font-weight:900; font-size:14px; color:#333;" data-i18n="SEARCH_ALL">PESQUISAR TODOS OS REGISTOS (lento)</label>
+                        <label for="search-all-records" style="font-weight:900; font-size:14px; color:#333;">SEARCH ALL
+                            RECORDS (slow)</label>
                         <span style="font-size:12px; color:#666;">Use when you don't know the date.</span>
                     </div>
                     <div class="grid-2" style="margin-top: 10px;">
                         <div>
-                            <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="EVENT_TYPE">Tipo de Evento</label>
+                            <label style="font-weight:900; font-size:12px; color:#666;">Event Type</label>
                             <select id="search-type-filter">
                                 <option value="ALL">ALL</option>
                                 <option value="OFFICE / BATCH_CREATED">OFFICE / BATCH_CREATED</option>
@@ -942,7 +876,7 @@
                             </select>
                         </div>
                         <div>
-                            <label style="font-weight:900; font-size:12px; color:#666;" data-i18n="STATUS_LBL">Estado</label>
+                            <label style="font-weight:900; font-size:12px; color:#666;">Status</label>
                             <select id="search-status-filter">
                                 <option value="ALL">ALL</option>
                                 <option value="PACKED">PACKED</option>
@@ -954,9 +888,9 @@
                     </div>
 
                     <button class="btn-submit" style="background: var(--accent); margin-top: 10px;"
-                        onclick="searchOrderHistory()" data-i18n="SEARCH_HISTORY">PESQUISAR HISTÓRICO</button>
+                        onclick="searchOrderHistory()">SEARCH HISTORY</button>
                     <button class="btn-submit" style="background: var(--packing); margin-top: 10px;"
-                        onclick="exportAllSearchHistories()" data-i18n="EXPORT_ALL">EXPORTAR TUDO (EXCEL)</button>
+                        onclick="exportAllSearchHistories()">EXPORT ALL (EXCEL)</button>
 
                     <div id="search-cards-container"
                         style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 15px;">
@@ -969,7 +903,7 @@
         <div id="sec-performance" class="section">
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                    <h2 style="margin:0;" data-i18n="OPERATOR_PERF">📊 Desempenho dos Operadores</h2>
+                    <h2 style="margin:0;">📊 Operator Performance</h2>
                     <input type="date" id="perf-date-filter" onchange="loadPerformanceStats()" style="width:220px;">
                 </div>
                 <div class="scroll-area">
@@ -992,25 +926,25 @@
         <!-- SECTION: REPORTS (EXCEL EXPORT) -->
         <div id="sec-reports" class="section">
             <div class="card">
-                <h2 data-i18n="REPORTS_TITLE">📁 Relatórios e Exportações Excel</h2>
+                <h2>📁 Excel Reports & Exports</h2>
                 <div class="grid-2">
                     <div>
-                        <h4 data-i18n="EXPORT_DATE_RANGE">1. Exportar por Intervalo de Datas</h4>
-                        <label data-i18n="START_DATE_LBL">Data Início:</label><input type="date" id="rep-start-date">
-                        <label data-i18n="END_DATE_LBL">Data Fim:</label><input type="date" id="rep-end-date">
+                        <h4>1. Export by Date Range</h4>
+                        <label>Start Date:</label><input type="date" id="rep-start-date">
+                        <label>End Date:</label><input type="date" id="rep-end-date">
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                             <button class="btn-mobile-op btn-op-green"
-                                onclick="exportData('ACTIVITY')" data-i18n="EXPORT_ACT">PACKING/Devoluções</button>
+                                onclick="exportData('ACTIVITY')">Packing/Returns</button>
                             <button class="btn-mobile-op btn-op-green" style="background:var(--color-prepack);"
-                                onclick="exportData('PREPACK')" data-i18n="EXPORT_PREPACK">Pré-PACKING</button>
+                                onclick="exportData('PREPACK')">Pre-Packing</button>
                         </div>
                     </div>
                     <div>
-                        <h4 data-i18n="CARRIER_REPORT">2. Relatório de Transportadoras</h4>
-                        <p data-i18n="CARRIER_REPORT_HINT">Exportar lista ID | Transportadora | Tempos.</p>
+                        <h4>2. Transport Carrier Report</h4>
+                        <p>Export ID | Carrier | Timestamps list.</p>
                         <button class="btn-mobile-op btn-op-purple" style="width:100%;"
-                            onclick="exportData('CARRIERS')" data-i18n="GROUP_BY_CARRIER">Agrupar por Transportadora</button>
-                        <small data-i18n="TIMES_INCL">* Tempos Início/Fim/Confirmação incluídos.</small>
+                            onclick="exportData('CARRIERS')">Group by Carrier</button>
+                        <small>* Start/End/Confirmed times included.</small>
                     </div>
                 </div>
             </div>
@@ -1019,7 +953,7 @@
         <!-- SECTION: PICKING -->
         <div id="sec-picking" class="section">
             <div class="card">
-                <h2 data-i18n="PICKING_PHASE">🧺 Fase de PICKING</h2>
+                <h2>🧺 Picking Phase</h2>
 
                 <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:10px;">
                     <div style="font-weight:900; font-size:12px; color:#666; text-transform:uppercase;">Data</div>
@@ -1046,14 +980,16 @@
                         style="flex:1; height:65px; font-size:22px; font-weight:bold;"></select>
                     <button id="btn-pick-details" class="btn-submit"
                         style="width:200px; background:var(--primary); display:none;"
-                        onclick="openEditModal(document.getElementById('pick-batch-select').value, true)" data-i18n="VIEW_DETAILS">VER DETALHES</button>
+                        onclick="openEditModal(document.getElementById('pick-batch-select').value, true)">VIEW
+                        DETAILS</button>
                     <button id="btn-select-all" class="btn-submit"
-                        style="width:200px; background:var(--accent); display:none;" onclick="selectAllPicking()" data-i18n="SELECT_ALL">SELECIONAR TUDO</button>
+                        style="width:200px; background:var(--accent); display:none;" onclick="selectAllPicking()">SELECT
+                        ALL</button>
                 </div>
                 <div id="picking-list-container" style="margin-top:25px;"></div>
                 <button id="btn-finish-picking" class="btn-submit"
                     style="background:var(--picking); display:none; margin-top:35px; height:80px; font-size:24px;"
-                    onclick="finishPicking()" data-i18n="FINISH_PICKING">PICKING COMPLETO -> MOVER PARA PACKING</button>
+                    onclick="finishPicking()">PICKING COMPLETE -> MOVE TO PACKING</button>
             </div>
         </div>
 
@@ -1061,7 +997,7 @@
         <div id="sec-warehouse" class="section">
             <div class="grid-2">
                 <div class="card">
-                    <h3 data-i18n="SELECT_BATCH">1. Selecionar Lote Ativo</h3>
+                    <h3>1. Select Active Batch</h3>
 
                     <div style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:10px;">
                         <div style="font-weight:900; font-size:12px; color:#666; text-transform:uppercase;">Data</div>
@@ -1074,8 +1010,8 @@
                 </div>
                 <div class="card">
                     <div id="meta-cancel-banner" class="meta-cancel-banner" style="display:none;">
-                        <span data-i18n="ORDER_CANCELLED">ENCOMENDA CANCELADA!</span>
-                        <button class="btn-dismiss" onclick="resetScan()" data-i18n="CLEAR_SCAN">LIMPAR PICAGEM</button>
+                        <span>ORDER CANCELED!</span>
+                        <button class="btn-dismiss" onclick="resetScan()">CLEAR SCAN</button>
                     </div>
                     <p style="font-size:20px;">ID: <b id="v-id">-</b> | Track: <b id="v-track">-</b></p>
                     <div id="v-volumes-status"
@@ -1085,14 +1021,14 @@
                         style="display:none; border:2px solid #ddd; padding:15px; border-radius:10px; background:#fcfcfc;">
                         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                             <div style="flex:1;">
-                                <div style="font-size:10px; font-weight:bold; color:#777;" data-i18n="CUSTOMER_LBL">CLIENTE:</div>
+                                <div style="font-size:10px; font-weight:bold; color:#777;">CUSTOMER:</div>
                                 <div id="meta-cust-name" style="font-size:20px; font-weight:bold;">-</div>
                             </div>
                             <div id="meta-volumes-badge"
                                 style="display:none; background:#f59e0b; color:#fff; padding:8px 16px; border-radius:10px; font-size:22px; font-weight:900; white-space:nowrap;">
                             </div>
                         </div>
-                        <div style="font-size:10px; font-weight:bold; color:#777; margin-top:10px;" data-i18n="EXPECTED_CONTENT">CONTEÚDO ESPERADO:
+                        <div style="font-size:10px; font-weight:bold; color:#777; margin-top:10px;">EXPECTED CONTENT:
                         </div>
                         <div id="meta-inv-content" style="font-size:20px; font-weight:bold; color:var(--accent);">-
                         </div>
@@ -1111,10 +1047,10 @@
                     style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--accent); border-radius:15px;"
                     autocomplete="off">
                 <button id="btn-confirm-order" class="btn-mobile-op btn-op-green" style="display:none;"
-                    onclick="confirmOrder('PACKING')" data-i18n="ID_COMPLETE">ID COMPLETO</button>
+                    onclick="confirmOrder('PACKING')">ID COMPLETE</button>
             </div>
             <div class="card">
-                <h3 data-i18n="SCANNED_IDS">📦 IDs Picados neste Lote (Concluídos)</h3>
+                <h3>📦 IDs Picados neste Lote (Concluídos)</h3>
                 <div class="scroll-area">
                     <table id="recent-scans-table">
                         <thead>
@@ -1129,15 +1065,15 @@
                     </table>
                 </div>
                 <button id="btn-finalize-batch" class="btn-mobile-op btn-op-purple"
-                    style="display:none; margin-top:20px;" onclick="finishBatchPacking()" data-i18n="FINALIZE_BATCH">FINALIZAR LOTE</button>
+                    style="display:none; margin-top:20px;" onclick="finishBatchPacking()">FINALIZE BATCH</button>
             </div>
         </div>
 
         <!-- SECTION: RETURNS -->
         <div id="sec-returns" class="section">
             <div class="card scan-area" style="text-align:center;">
-                <h2 data-i18n="RETURNS_SCANNER">🔄 SCANNER DEVOLUÇÕES</h2>
-                <input type="text" id="return-input" placeholder="PICAR ID, TRACK OU PRODUTO..." data-i18n-placeholder="SCAN_PH"
+                <h2>🔄 RETURNS SCANNER</h2>
+                <input type="text" id="return-input" placeholder="SCAN ID, TRACK OR PRODUCT..."
                     style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--returns); border-radius:15px;"
                     autocomplete="off"
                     onkeypress="if(event.key==='Enter'){handleScan(this.value, 'RETURN'); this.value='';}">
@@ -1151,13 +1087,14 @@
                 </div>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-return-complete" class="btn-mobile-op btn-op-orange" style="flex:1; display:none;"
-                        onclick="confirmOrder('RETURN')" data-i18n="RETURN_COMPLETE">✅ DEVOLUÇÃO COMPLETA</button>
+                        onclick="confirmOrder('RETURN')">✅ RETURN COMPLETO</button>
                     <button id="btn-return-incomplete" class="btn-mobile-op"
-                        style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('RETURN')" data-i18n="RETURN_INCOMPLETE">⚠️ DEVOLUÇÃO INCOMPLETA</button>
+                        style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('RETURN')">⚠️
+                        RETURN INCOMPLETO</button>
                 </div>
             </div>
             <div class="card">
-                <h3 data-i18n="RECENT_RETURNS">Devoluções Recentes</h3>
+                <h3>Recent Returns</h3>
                 <div class="scroll-area">
                     <table id="recent-returns-table">
                         <thead>
@@ -1179,8 +1116,8 @@
         <!-- SECTION: REFUNDS -->
         <div id="sec-refunds" class="section">
             <div class="card scan-area" style="text-align:center;">
-                <h2 data-i18n="REFUNDS_SCANNER">💸 SCANNER REEMBOLSOS</h2>
-                <input type="text" id="refund-input" placeholder="PICAR ID, TRACK OU PRODUTO..." data-i18n-placeholder="SCAN_PH"
+                <h2>💸 REFUNDS SCANNER</h2>
+                <input type="text" id="refund-input" placeholder="SCAN ID, TRACK OR PRODUCT..."
                     style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--refunds); border-radius:15px;"
                     autocomplete="off"
                     onkeypress="if(event.key==='Enter'){handleScan(this.value, 'REFUND'); this.value='';}">
@@ -1194,9 +1131,11 @@
                 </div>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-refund-complete" class="btn-mobile-op"
-                        style="flex:1; background:var(--refunds); display:block;" onclick="confirmOrder('REFUND')" data-i18n="REFUND_COMPLETE">✅ REEMBOLSO COMPLETO</button>
+                        style="flex:1; background:var(--refunds); display:block;" onclick="confirmOrder('REFUND')">✅
+                        REFUND COMPLETO</button>
                     <button id="btn-refund-incomplete" class="btn-mobile-op"
-                        style="flex:1; background:#f59e0b; display:block;" onclick="confirmOrderIncomplete('REFUND')" data-i18n="REFUND_INCOMPLETE">⚠️ REEMBOLSO INCOMPLETO</button>
+                        style="flex:1; background:#f59e0b; display:block;" onclick="confirmOrderIncomplete('REFUND')">⚠️
+                        REFUND INCOMPLETO</button>
                     <button id="btn-refund-swipe" class="btn-mobile-op"
                         style="flex:1 1 100%; background:#0ea5e9; display:block;"
                         onclick="confirmRefundSwipe()">SWIPE</button>
@@ -1212,7 +1151,7 @@
                 </div>
             </div>
             <div class="card">
-                <h3 data-i18n="RECENT_REFUNDS">Reembolsos Recentes</h3>
+                <h3>Recent Refunds</h3>
                 <div class="scroll-area">
                     <table id="recent-refunds-table">
                         <thead>
@@ -1239,7 +1178,7 @@
                     onkeypress="if(event.key==='Enter'){handlePrePack(this.value); this.value='';}">
             </div>
             <div class="card">
-                <h3><span data-i18n="TODAYS_PREPACKS">Pré-Packings de Hoje</span></h3>
+                <h3>Today's Pre-Packings</h3>
                 <div class="scroll-area">
                     <table id="prepack-recent-table">
                         <thead>
@@ -1257,10 +1196,10 @@
         </div>
         <div id="sec-masterdata" class="section">
             <div class="card">
-                <h2 data-i18n="MASTER_DB">📋 Base de Dados de Produtos</h2>
+                <h2>📋 Master Product Database</h2>
                 <div class="grid-2"><input type="file" id="csv-file-input" accept=".csv"><button class="btn-submit"
-                        onclick="handleCSVUpload()" data-i18n="UPLOAD_CSV">CARREGAR CSV</button></div>
-                <hr><input type="text" id="master-search" placeholder="Pesquisar..." data-i18n-placeholder="SEARCH_PH" onkeyup="updateMasterPreview()">
+                        onclick="handleCSVUpload()">UPLOAD CSV</button></div>
+                <hr><input type="text" id="master-search" placeholder="Search..." onkeyup="updateMasterPreview()">
                 <div class="scroll-area">
                     <table id="master-db-table">
                         <thead>
@@ -1276,13 +1215,13 @@
         </div>
         <div id="sec-office" class="section">
             <div class="card">
-                <h2 data-i18n="CREATE_BATCH_H">📦 Criar Novo Lote</h2>
-                <div class="grid-2"><input type="text" id="off-batch-name" placeholder="Nome" data-i18n-placeholder="BATCH_NAME_PH"><select
+                <h2>📦 Create New Batch</h2>
+                <div class="grid-2"><input type="text" id="off-batch-name" placeholder="Name"><select
                         id="off-carrier-select"></select></div><input type="date" id="off-batch-date">
                 <div class="grid-2"><textarea id="off-products-list" rows="12"
                         placeholder="SKU [TAB] Qty [TAB] Pos"></textarea><textarea id="off-order-meta" rows="12"
                         placeholder="ID [TAB] Customer [TAB] Content"></textarea></div><button class="btn-submit"
-                    onclick="createBatch()" data-i18n="CREATE_BATCH_BTN">CRIAR LOTE</button>
+                    onclick="createBatch()">CREATE BATCH</button>
             </div>
         </div>
     </div>
@@ -1301,10 +1240,12 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth(), db = firebase.database();
 
+        // scanData now includes startTime and endTime
         let currentUser = null, scanData = { id: "", track: "", tracks: [], prods: [], startTime: "", endTime: "", startTs: null, endTs: null };
         let isAdminUser = false;
         let masterProductsDB = {}, currentMode = "PACKING", activeBatchData = null, activeBatchPath = null;
 
+        // --- PERF: shared listener state (avoid duplicated .on listeners) ---
         let __cfgBound = false;
         let __overviewBatchesRef = null, __overviewBatchesCb = null;
         let __overviewPrepackRef = null, __overviewPrepackCb = null;
@@ -1320,10 +1261,15 @@
 
         let __modalBatchRef = null, __modalBatchCb = null;
 
+
         function safeKey(str) { if (!str) return "UNKNOWN"; return str.toString().replace(/[.#$/[\]]/g, "_").trim().toUpperCase(); }
         function _isReturnMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'RETURN' || m === 'RETURNS' || m === 'RETURNED'; }
         function _isRefundMode(mode) { const m = (mode || '').toString().toUpperCase(); return m === 'REFUND' || m === 'REFUNDS' || m === 'REFUNDED'; }
 
+        // --- GOOGLE SHEETS AUTO SYNC (RETURNS / REFUNDS from WH) ---
+        // This WH file records Returns/Refunds directly in Firebase. The OFF file can see
+        // those records later, but it does not execute the code that created them.
+        // Therefore the Sheets sync must also exist here in WH.
         window.WH_SHEETS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzr8b1fDe28HCRXjQHJK8QekR3b1uMp2FXsJS09cGtw4nd53wpQJZeC3KoRgdGjKXJG/exec';
 
         function whSheetsConfigured() {
@@ -1367,6 +1313,8 @@
             const status = String(record.returnStatus || '').trim().toUpperCase();
             const reason = String(record.refundReason || '').trim().toUpperCase();
 
+            // Google Sheets must receive ONLY normal REFUNDS closed as COMPLETE or INCOMPLETE.
+            // Special refund buttons stay only in Firebase/history, even when products were scanned.
             if (record.specialNoTracking === true || record.specialCloseWithProducts !== undefined || reason) return true;
 
             return status === 'SWIPE' ||
@@ -1413,11 +1361,15 @@
         async function deleteReturnRefundRecord(regKey, mode) {
             if (!regKey) return;
             if (!confirm('Apagar este registo?')) return;
-
+            // Best effort: sync Sheets first, then remove from Firebase.
+            // If Sheets is temporarily unavailable, Firebase delete still happens so WH does not block.
             try { await whSheetsSendReturnRefundDelete(regKey, mode); } catch (e) { console.warn(e); }
             return db.ref('registos/' + regKey).remove();
         }
 
+
+
+        // Returns expected IDs excluding cancelled IDs
         function getRequiredBatchIds(batch) {
             const expected = (batch && batch.expected_ids) ? batch.expected_ids : [];
             const cancelled = (batch && batch.cancelled_ids) ? Object.keys(batch.cancelled_ids) : [];
@@ -1477,35 +1429,23 @@
             isAdminUser = isAdmin;
             const m = document.getElementById('menu-items');
 
-            function buildNav() {
-                return isAdmin ?
-                    `<div class="nav-item" onclick="tab('sec-overview', this)">${t('NAV_OVERVIEW')}</div>
-             <div class="nav-item" onclick="tab('sec-search', this)">${t('NAV_SEARCH')}</div>
-             <div class="nav-item" onclick="tab('sec-performance', this)">${t('NAV_PERFORMANCE')}</div>
-             <div class="nav-item" onclick="tab('sec-reports', this)">${t('NAV_REPORTS')}</div>
-             <div class="nav-item" onclick="tab('sec-prepack', this)">${t('NAV_PREPACK')}</div>
-             <div class="nav-item" onclick="tab('sec-masterdata', this)">${t('NAV_MASTERDATA')}</div>
-             <div class="nav-item" onclick="tab('sec-office', this)">${t('NAV_OFFICE')}</div>
-             <div class="nav-item" onclick="tab('sec-picking', this)">${t('NAV_PICKING')}</div>
-             <div class="nav-item" onclick="tab('sec-warehouse', this)">${t('NAV_PACKING')}</div>
-             <div class="nav-item" onclick="tab('sec-returns', this)">${t('NAV_RETURNS')}</div>
-             <div class="nav-item" onclick="tab('sec-refunds', this)">${t('NAV_REFUNDS')}</div>` :
-                    `<div class="nav-item" onclick="tab('sec-picking', this)">${t('NAV_PICKING')}</div>
-             <div class="nav-item" onclick="tab('sec-prepack', this)">${t('NAV_PREPACK')}</div>
-             <div class="nav-item" onclick="tab('sec-returns', this)">${t('NAV_RETURNS')}</div>
-             <div class="nav-item" onclick="tab('sec-refunds', this)">${t('NAV_REFUNDS')}</div>
-             <div class="nav-item" onclick="tab('sec-warehouse', this)">${t('NAV_PACKING')}</div>`;
-            }
-            m.innerHTML = buildNav();
-            window.__rebuildNav = function() {
-                var activeEl = document.querySelector('#menu-items .nav-item.active');
-                var activeOnclick = activeEl ? activeEl.getAttribute('onclick') : null;
-                m.innerHTML = buildNav();
-                if (activeOnclick) {
-                    var newEl = document.querySelector('#menu-items .nav-item[onclick="' + activeOnclick + '"]');
-                    if (newEl) newEl.classList.add('active');
-                }
-            };
+            m.innerHTML = isAdmin ?
+                `<div class="nav-item" onclick="tab('sec-overview', this)">OVERVIEW</div>
+             <div class="nav-item" onclick="tab('sec-search', this)">SEARCH</div>
+             <div class="nav-item" onclick="tab('sec-performance', this)">PERFORMANCE</div>
+             <div class="nav-item" onclick="tab('sec-reports', this)">REPORTS</div>
+             <div class="nav-item" onclick="tab('sec-prepack', this)">PRE-PACKING</div>
+             <div class="nav-item" onclick="tab('sec-masterdata', this)">MASTER DATA</div>
+             <div class="nav-item" onclick="tab('sec-office', this)">OFFICE</div>
+             <div class="nav-item" onclick="tab('sec-picking', this)">PICKING</div>
+             <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>
+             <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
+             <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>` :
+                `<div class="nav-item" onclick="tab('sec-picking', this)">PICKING</div>
+             <div class="nav-item" onclick="tab('sec-prepack', this)">PRE-PACKING</div>
+             <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
+             <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>
+             <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>`;
 
             syncGlobalData();
             if (isAdmin) tab('sec-overview', document.querySelector('[onclick*="sec-overview"]'));
@@ -1513,7 +1453,7 @@
         }
 
         function tab(id, el) {
-
+            // --- ACCESS GUARD (WH users only see Picking, Pre-Packing, Returns, Packing) ---
             if (!isAdminUser) {
                 const allowed = ['sec-picking', 'sec-prepack', 'sec-returns', 'sec-refunds', 'sec-warehouse'];
                 if (!allowed.includes(id)) {
@@ -1527,6 +1467,7 @@
             document.getElementById(id).classList.add('active');
             if (el) el.classList.add('active');
 
+            // keep PICKING date selector in sync with the global date filter
             if (id === 'sec-picking') {
                 try {
                     const gd = document.getElementById('global-date-filter');
@@ -1537,7 +1478,7 @@
 
             if (id === 'sec-warehouse') {
                 currentMode = 'PACKING';
-
+                // keep PACKING date selector in sync with the global date filter
                 try {
                     const gd = document.getElementById('global-date-filter');
                     const pa = document.getElementById('pack-date-filter');
@@ -1560,11 +1501,13 @@
 
         function logout() { auth.signOut(); localStorage.removeItem('lastPackingBatch'); }
 
+        // --- NEW: EXCEL EXPORT LOGIC WITH START/END TIMES ---
         async function exportData(type) {
             const start = document.getElementById('rep-start-date').value;
             const end = document.getElementById('rep-end-date').value;
             const dataToExport = [];
 
+            // Helper: check YYYY-MM-DD in range (inclusive)
             const inRange = (d) => (d && d >= start && d <= end);
 
             if (type === 'ACTIVITY') {
@@ -1592,7 +1535,8 @@
                 });
 
             } else if (type === 'CARRIERS') {
-
+                // CARRIERS: export ALL IDs created in batches in the date range,
+                // including batch info, who packed, tracking, contents, status + cancellation reason.
                 const [batchSnap, regSnap] = await Promise.all([
                     db.ref('active_batches').once('value'),
                     db.ref('registos').once('value')
@@ -1601,12 +1545,13 @@
                 const batches = batchSnap.val() || {};
                 const registos = regSnap.val() || {};
 
+                // Build quick lookup for packing records: batchKey -> id -> latest packing record
                 const packIndex = {};
                 Object.values(registos).forEach(r => {
                     if (r && r.mode === 'PACKING' && r.batch && r.id) {
                         if (!packIndex[r.batch]) packIndex[r.batch] = {};
                         const prev = packIndex[r.batch][r.id];
-
+                        // pick the latest by (dateClean + time) string if possible; else keep first
                         const curKey = (r.dateClean || "") + " " + (r.endTime || r.time || "");
                         const prevKey = prev ? ((prev.dateClean || "") + " " + (prev.endTime || prev.time || "")) : "";
                         if (!prev || curKey > prevKey) packIndex[r.batch][r.id] = r;
@@ -1627,6 +1572,7 @@
                         const cancelInfo = cancelled[orderId] || null;
                         const packRec = (packIndex[batchKey] && packIndex[batchKey][orderId]) ? packIndex[batchKey][orderId] : null;
 
+                        // Status precedence: CANCELLED > PACKED > PENDING
                         let status = "PENDING";
                         if (cancelInfo) status = "CANCELLED";
                         else if (packRec) status = "PACKED";
@@ -1669,21 +1615,26 @@
             XLSX.writeFile(wb, `WH_Export_${type}_${start}_to_${end}.xlsx`);
         }
 
+        // ===== PACKING VALIDATION (EXPECTED CONTENT vs SCANNED) =====
         function _normName(s) {
             return String(s || "").trim().replace(/\s+/g, ' ').toUpperCase();
         }
 
         function parseExpectedContent(contentStr) {
-
+            // Expected format examples:
+            // "SKU2069 AIR CURTAIN x1 | WARRANTY ES x1"
+            // "ITEM A x2; ITEM B x1"
             const out = {};
             const raw = String(contentStr || "").trim();
             if (!raw) return out;
 
+            // Split by | or ; or , (with optional spaces around)
             const parts = raw.split(/\s*(\||;|,)\s*/).filter(x => x && x !== '|' && x !== ';' && x !== ',');
             parts.forEach(seg => {
                 const s = String(seg || "").trim();
                 if (!s) return;
 
+                // Match "... x2" OR "... 2" (last token numeric)
                 const m = s.match(/^(.*?)(?:\s*x\s*|\s+)(\d+)\s*$/i);
                 if (!m) return;
 
@@ -1707,7 +1658,7 @@
         }
 
         function packingMeetsExpected() {
-
+            // If there is no expected content recorded, do NOT block (fails-open).
             if (!activeBatchData || !activeBatchData.order_details || !scanData.id) {
                 return { ok: true, missing: [], extra: [] };
             }
@@ -1729,6 +1680,8 @@
                 if (got < need) missing.push(`${prod} (${got}/${need})`);
             });
 
+            // Extra products must block PACKING completion too.
+            // This catches both products that are not expected for the ID and quantities above the expected qty.
             const extra = [];
             Object.keys(scanned).forEach(prod => {
                 const got = scanned[prod] || 0;
@@ -1770,6 +1723,7 @@
             const ids = activeBatchData.expected_ids || [];
             return ids.includes(id);
         }
+
 
         function packingEscapeHtml(v) {
             return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -1891,7 +1845,7 @@
             if (!btn) return;
 
             if ((currentMode || 'PACKING') === 'PACKING') {
-
+                // PACKING is now fully guided and auto-completes after the tracking scan.
                 btn.style.display = 'none';
                 const volEl = document.getElementById('v-volumes-status');
                 if (volEl) {
@@ -1941,7 +1895,7 @@
                     updatePackingGuidance();
                     return;
                 }
-
+                // 🛡️ GUARD: bloquear ID ya procesado
                 if (activeBatchData && activeBatchData.processed_ids && activeBatchData.processed_ids[v]) {
                     showPackingErrorModal(
                         'ID JÁ PROCESSADO',
@@ -1989,6 +1943,8 @@
                 return;
             }
 
+            // Not an ID and not a product in master data: in PACKING this is treated as tracking,
+            // but only after the expected products are exactly correct.
             if (!scanData.id) {
                 alert('Primeiro tens de picar o ID.');
                 updatePackingGuidance();
@@ -2017,7 +1973,8 @@
                 updatePackingGuidance();
                 return;
             }
-
+            // Um ID com vários volumes pode ter trackings iguais ou diferentes.
+            // Por isso cada leitura conta como um volume picado, mesmo que o código seja repetido.
             scanData.tracks.push(v);
             scanData.track = scanData.tracks[0];
             updateDisplay('PACKING');
@@ -2056,11 +2013,11 @@
             if (masterProductsDB[key]) {
                 const prodName = masterProductsDB[key]; scanData.prods.push(prodName);
             } else if (/^\d{8}$/.test(v)) {
-
+                // RECORD START TIME ON FIRST SCAN OF ID
                 if (!scanData.id) { scanData.startTime = _nowTime(); scanData.startTs = Date.now(); }
                 scanData.id = v; if (m === 'PACKING') showMetadata(v);
             } else {
-
+                // tracking: support multiple volumes
                 if (!scanData.tracks) scanData.tracks = [];
                 if (!scanData.tracks.includes(v)) {
                     scanData.tracks.push(v);
@@ -2069,23 +2026,25 @@
             }
             updateDisplay(m);
             refreshConfirmBtn();
-
+            // Trigger packing comparison whenever scan data changes in RETURN/REFUND mode
             if (_isReturnMode(m) || _isRefundMode(m)) {
                 updateReturnRefundStatus(m);
-
+                // Check for previous INCOMPLETE records when ID is set
                 if (scanData.id) {
                     checkAndShowPartialBanner(m);
                     maybeShowReturnRefundPartialBlock(m);
                 }
             }
         }
-
+        // ===== RETURN/REFUND vs PACKING COMPARISON =====
+        // Products that are EXCLUDED from return/refund comparison (warranties, etc.)
         function _isExcludedFromReturn(prodName) {
             const n = (prodName || '').toString().toUpperCase().trim();
             return n === 'WARRANTY PT' || n === 'WARRANTY ES' ||
                 n.startsWith('WARRANTY PT ') || n.startsWith('WARRANTY ES ');
         }
 
+        // Returns { found: bool, match: bool, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] }
         async function checkReturnVsPacking(orderId, scannedProds) {
             if (!orderId) return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
             try {
@@ -2093,6 +2052,7 @@
                 const recs = snap.val();
                 if (!recs) return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
 
+                // Find the latest PACKING record for this ID
                 let packRec = null;
                 Object.values(recs).forEach(r => {
                     if (!r || (r.mode || '').toString().toUpperCase() !== 'PACKING') return;
@@ -2101,17 +2061,22 @@
 
                 if (!packRec) return { found: false, match: false, packedProds: [], packedRelevant: [], missingProds: [], extraProds: [] };
 
+                // All packed products (for display)
                 const packedRaw = (packRec.prods || '').split(' | ').map(p => p.trim().toUpperCase()).filter(Boolean);
 
+                // Relevant packed products (excluding warranties — these don't need to be returned)
                 const packedRelevant = packedRaw.filter(p => !_isExcludedFromReturn(p));
 
+                // Scanned products (excluding warranties too)
                 const scannedNorm = (scannedProds || []).map(p => p.trim().toUpperCase()).filter(p => p && !_isExcludedFromReturn(p));
 
+                // Build count maps on RELEVANT products only
                 const countPacked = {};
                 packedRelevant.forEach(p => { countPacked[p] = (countPacked[p] || 0) + 1; });
                 const countScanned = {};
                 scannedNorm.forEach(p => { countScanned[p] = (countScanned[p] || 0) + 1; });
 
+                // Compare
                 const allKeys = new Set([...Object.keys(countPacked), ...Object.keys(countScanned)]);
                 const missingProds = []; // in packed but not (fully) returned
                 const extraProds = [];   // returned but not in packed
@@ -2132,11 +2097,14 @@
         }
 
         function getReturnRefundCompareProds() {
-
+            // For a second attempt after an INCOMPLETE return/refund, compare
+            // previous incomplete products + products scanned in the current session.
+            // This lets the operator scan only the missing products and then close as COMPLETE.
             const prev = (scanData && Array.isArray(scanData._prevIncompleteProds)) ? scanData._prevIncompleteProds : [];
             const current = (scanData && Array.isArray(scanData.prods)) ? scanData.prods : [];
             return [...prev, ...current];
         }
+
 
         function hasCurrentReturnRefundProducts() {
             const current = (scanData && Array.isArray(scanData.prods)) ? scanData.prods : [];
@@ -2309,6 +2277,7 @@ Faltam produtos do Packing:
                 return { ok: false, message: 'Faltam dados (ID e tracking)!' };
             }
 
+            // Returns/Refunds must never be closed without a product scanned in the CURRENT session.
             if (!hasCurrentReturnRefundProducts()) {
                 return { ok: false, message: 'Tens de picar pelo menos 1 produto antes de fechar como COMPLETO ou INCOMPLETO.' };
             }
@@ -2320,18 +2289,22 @@ Faltam produtos do Packing:
             }
             const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
 
+            // If there is no PACKING history, allow closing (as requested), as long as a product was scanned.
             if (!check.found) return { ok: true, check };
 
+            // If product is not in PACKING, or qty is above PACKING, block both COMPLETE and INCOMPLETE.
             if (check.extraProds && check.extraProds.length) {
                 return { ok: false, check, message: buildReturnRefundBlockMessage(check, st === 'COMPLETE' ? 'como COMPLETO' : 'como INCOMPLETO') };
             }
 
+            // COMPLETE needs an exact match with PACKING (missing products must be closed as INCOMPLETE instead).
             if (st === 'COMPLETE' && check.missingProds && check.missingProds.length) {
                 let msg = buildReturnRefundBlockMessage(check, 'como COMPLETO');
                 msg += '\n\nSe os produtos não voltaram todos, fecha como INCOMPLETO.';
                 return { ok: false, check, message: msg };
             }
 
+            // INCOMPLETE is allowed when products are valid but still missing vs PACKING.
             return { ok: true, check };
         }
 
@@ -2345,6 +2318,7 @@ Faltam produtos do Packing:
             return scanData._prevIncompleteProds;
         }
 
+        // Build packed products display HTML (all products, warranties greyed out)
         function _renderPackedProdsHtml(packedProds) {
             if (!packedProds || packedProds.length === 0) return '';
             const relevantCount = packedProds.filter(p => !_isExcludedFromReturn(p)).length;
@@ -2365,6 +2339,11 @@ Faltam produtos do Packing:
             </div>`;
         }
 
+
+        // ===== PARTIAL RETURN DETECTION =====
+        // Checks if this ID already has an INCOMPLETE return/refund record.
+        // For REFUNDS, also treats special button closures WITH PRODUCTS as previous locked products.
+        // Returns { found: bool, records: [], allPrevProds: string[], latestRec: obj|null }
         async function checkExistingIncomplete(orderId, mode) {
             if (!orderId) return { found: false, records: [], allPrevProds: [], latestRec: null };
             try {
@@ -2391,8 +2370,10 @@ Faltam produtos do Packing:
 
                 if (!matched.length) return { found: false, records: [], allPrevProds: [], latestRec: null };
 
+                // Sort by ts ascending so we accumulate in order
                 matched.sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
+                // Gather ALL previously scanned products across all INCOMPLETE/special-with-products records
                 const allPrevProds = [];
                 matched.forEach(r => {
                     const prods = (r.prods || '').split(' | ').map(p => p.trim()).filter(Boolean);
@@ -2407,6 +2388,7 @@ Faltam produtos do Packing:
             }
         }
 
+        // Render partial return banner and update scanData.prevIncompleteProds
         async function checkAndShowPartialBanner(mode) {
             const isReturn = _isReturnMode(mode);
             const bannerId = isReturn ? 'rv-partial-banner' : 'fv-partial-banner';
@@ -2427,10 +2409,14 @@ Faltam produtos do Packing:
                 return;
             }
 
+            // Store previous prods so confirmOrder/confirmOrderIncomplete can include them
             scanData._prevIncompleteProds = result.allPrevProds || [];
 
+            // Current session prods (newly scanned now)
             const currentProds = (scanData.prods || []).slice();
 
+            // Combined: prev + new (deduplicated display, but keep counts)
+            // We'll show them separately: "já picados" + "novos"
             const prevProdsHtml = result.allPrevProds.length
                 ? result.allPrevProds.map(p => `<span class="pbanner-prod-tag">${_fmt(p)}</span>`).join('')
                 : '<span style="color:#b45309; font-size:12px;">Nenhum produto guardado</span>';
@@ -2439,6 +2425,7 @@ Faltam produtos do Packing:
                 ? currentProds.map(p => `<span class="pbanner-prod-tag new">${_fmt(p)}</span>`).join('')
                 : '<span style="color:#065f46; font-size:12px;">Nenhum produto novo ainda</span>';
 
+            // Combined count for packing check
             const allCombined = [...result.allPrevProds, ...currentProds];
             const combinedHtml = allCombined.length
                 ? allCombined.map(p => `<span class="pbanner-prod-tag combined">${_fmt(p)}</span>`).join('')
@@ -2460,6 +2447,8 @@ Faltam produtos do Packing:
             <div class="pbanner-summary">ℹ️ Ao fechar, os produtos anteriores e os novos ficam todos no histórico. Só podes picar produtos/quantidades ainda em falta.</div>
         `;
         }
+        // ===== END PARTIAL RETURN DETECTION =====
+
 
         function setRefundActionButtonsVisible() {
             const ids = ['btn-refund-complete', 'btn-refund-incomplete', 'btn-refund-swipe', 'btn-refund-no-product', 'btn-refund-product-damaged', 'btn-refund-box-damaged'];
@@ -2472,7 +2461,7 @@ Faltam produtos do Packing:
                 el.style.visibility = 'visible';
                 el.disabled = false;
                 el.style.cursor = 'pointer';
-
+                // Keep the buttons visible for the operator, but make unavailable actions look softer.
                 if (id === 'btn-refund-complete' || id === 'btn-refund-incomplete') {
                     el.style.opacity = hasProduct ? '1' : '.72';
                 } else {
@@ -2481,6 +2470,7 @@ Faltam produtos do Packing:
             });
         }
 
+        // Called when ID or products change in RETURN/REFUND mode — updates status banner + buttons
         async function updateReturnRefundStatus(mode) {
             const m = (mode || currentMode || '').toString().toUpperCase();
             const isReturn = _isReturnMode(m);
@@ -2496,7 +2486,8 @@ Faltam produtos do Packing:
             const btnRefundSwipe = document.getElementById('btn-refund-swipe');
 
             const canUseRefundSpecial = () => {
-
+                // REFUNDS special close buttons can be used with or without products and with or without tracking.
+                // They only need the order ID. Normal COMPLETE/INCOMPLETE rules remain unchanged.
                 return isRefund && !!scanData.id;
             };
             const updateRefundSpecialButtons = () => {
@@ -2586,7 +2577,7 @@ Faltam produtos do Packing:
             const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
 
             if (!check.found) {
-
+                // ID not found in packing — allow both COMPLETE and INCOMPLETE (product already scanned).
                 if (btnComplete) btnComplete.style.display = 'block';
                 if (btnIncomplete) btnIncomplete.style.display = 'block';
                 if (statusEl) {
@@ -2612,7 +2603,7 @@ Faltam produtos do Packing:
             }
 
             if (check.match) {
-
+                // Exact match — COMPLETE is allowed. INCOMPLETE remains available only if the operator chooses it.
                 if (btnComplete) btnComplete.style.display = 'block';
                 if (btnIncomplete) btnIncomplete.style.display = 'block';
                 if (statusEl) {
@@ -2623,7 +2614,7 @@ Faltam produtos do Packing:
                     statusEl.innerHTML = `✅ Produtos coincidem com packing (${relevantCount} relevante${relevantCount !== 1 ? 's' : ''}).${packedHtml}`;
                 }
             } else {
-
+                // Only missing products — COMPLETE is blocked, INCOMPLETE is allowed.
                 let details = '';
                 if (check.missingProds.length) details += `<br>🔴 <b>Faltam:</b> ${check.missingProds.join(', ')}`;
                 if (btnComplete) btnComplete.style.display = 'none';
@@ -2643,11 +2634,16 @@ Faltam produtos do Packing:
             const label = reasonLabel || 'SWIPE';
             const status = statusKey || label;
 
+            // Special refund buttons can close with products missing and without tracking.
+            // The only mandatory field is the ID, because the record must belong to an order.
             if (!scanData.id) return alert('Falta o ID da encomenda. Pica o ID antes de fechar este refund especial.');
 
             const specialHasProducts = hasCurrentReturnRefundProducts();
             const specialProducts = specialHasProducts ? scanData.prods.join(' | ') : label;
 
+            // Refunds closed with special buttons follow the same partial-product rule:
+            // if this ID already had products closed as INCOMPLETE or with another special button,
+            // the operator can only scan the products/quantities still missing from PACKING.
             if (specialHasProducts) {
                 await refreshPreviousIncompleteProducts(m);
                 const remainingCheck = await checkReturnRefundOnlyRemainingProducts(m, { skipRefresh: true });
@@ -2700,33 +2696,40 @@ Faltam produtos do Packing:
                     ts: Date.now()
                 };
                 const regRef = await db.ref('registos').push(recordPayload);
-
+                // Special refund closures stay only in Firebase/history.
+                // Do not send them to Google Sheets RETURNS_REFUNDS.
                 resetScan();
             } catch (e) {
                 alert('Erro ao gravar refund.');
             }
         }
 
+        // Save REFUND as no product. Refunds only.
         async function confirmRefundNoProduct() {
             return confirmRefundSpecial('SEM PRODUTO', 'NO_PRODUCT');
         }
 
+        // Save REFUND as damaged product. Refunds only.
         async function confirmRefundProductDamaged() {
             return confirmRefundSpecial('PRODUTO DANIFICADO', 'PRODUCT_DAMAGED');
         }
 
+        // Save REFUND as damaged box. Refunds only.
         async function confirmRefundBoxDamaged() {
             return confirmRefundSpecial('CAIXA DANIFICADA', 'BOX_DAMAGED');
         }
 
+        // Backwards-compatible alias from older files.
         async function confirmRefundNoProductDamaged() {
             return confirmRefundNoProduct();
         }
 
+        // Save REFUND as SWIPE. Refunds only.
         async function confirmRefundSwipe() {
             return confirmRefundSpecial('SWIPE', 'SWIPE');
         }
 
+        // Save return/refund as INCOMPLETE
         async function confirmOrderIncomplete(mode) {
             const m = mode || currentMode;
             if (_isReturnMode(m) || _isRefundMode(m)) {
@@ -2772,6 +2775,10 @@ Faltam produtos do Packing:
                 alert('Erro ao gravar.');
             }
         }
+        // ============================================================
+
+
+
 
         function showPackingCompleteModal(batchName) {
             const modal = document.getElementById('packing-complete-modal');
@@ -2808,6 +2815,7 @@ Faltam produtos do Packing:
             });
             try { await logBatchAction(bId, 'BATCH COMPLETED AUTOMATICALLY'); } catch (e) { console.warn('auto batch log failed', e); }
 
+            // Stop listeners from the completed batch and clear the selection.
             try { if (activeBatchPath) db.ref(activeBatchPath).off(); } catch (e) { console.warn(e); }
             try { if (__processedRegRef && __processedRegCb) __processedRegRef.off('value', __processedRegCb); } catch (e) { console.warn(e); }
             __processedRegRef = null;
@@ -2827,7 +2835,7 @@ Faltam produtos do Packing:
 
         function overviewBatchIsReadyToAutoComplete(batch) {
             if (!batch || batch.status === 'COMPLETED') return false;
-
+            // Do not move batches that are still in PICKING. Only Packing-ready batches can be auto-completed.
             if (batch.status !== 'READY_TO_PACK') return false;
             const requiredIds = getRequiredBatchIds(batch);
             if (!requiredIds.length) return false;
@@ -2856,6 +2864,7 @@ Faltam produtos do Packing:
                 });
                 try { await logBatchAction(batchId, 'BATCH COMPLETED AUTOMATICALLY BY OVERVIEW CHECK: 100% IDS PACKED'); } catch (e) { console.warn('overview auto-complete log failed', e); }
 
+                // For non-realtime dates, update the local cache and re-render immediately.
                 if (__overviewCacheBatches && __overviewCacheBatches[batchId]) {
                     __overviewCacheBatches[batchId].status = 'COMPLETED';
                     __overviewCacheBatches[batchId].completedBy = user;
@@ -2890,6 +2899,7 @@ Faltam produtos do Packing:
             const bId = document.getElementById('wh-batch-select').value;
             if (!scanData.id || !scanData.track) return alert("Faltam dados!");
 
+            // ✅ RETURN/REFUND: product required; if PACKING exists, block wrong/extra products.
             if (_isReturnMode(m) || _isRefundMode(m)) {
                 const validation = await validateReturnRefundBeforeClose(m, 'COMPLETE');
                 if (!validation.ok) return alert(validation.message);
@@ -2909,7 +2919,7 @@ Faltam produtos do Packing:
                     showPackingProductError(chk, 'confirm');
                     return;
                 }
-
+                // ✅ VOLUMES: check all trackings have been scanned
                 const requiredVols = getPackingRequiredVolumes();
                 const gotTracks = getPackingScannedVolumes();
                 if (gotTracks < requiredVols) {
@@ -2922,16 +2932,17 @@ Faltam produtos do Packing:
                     return;
                 }
             }
-
+            // Work day: the real day the operator is performing the action
             const workDc = _nowDateClean();
             const endTime = _nowTime();
             const endTs = Date.now();
 
+            // Business day: the day of the batch (shipping day) for PACKING
             let dc = workDc;
 
             try {
                 if (m === 'PACKING' && bId) {
-
+                    // Make sure PACKING records are stored under the batch date (shipping day)
                     let batchDc = (activeBatchData && activeBatchData.dateClean) ||
                         (__overviewCacheBatches && __overviewCacheBatches[bId] && __overviewCacheBatches[bId].dateClean) ||
                         '';
@@ -2968,9 +2979,11 @@ Faltam produtos do Packing:
                     endTs: endTs,
                     time: endTime, // Main sorting time
 
+                    // Date used for totals / exports (shipping day in PACKING)
                     dateClean: dc,
                     DateTime: _dtKey(dc, endTime),
 
+                    // Optional: keep the real work day for productivity analytics
                     workDateClean: workDc,
                     workDateTime: _dtKey(workDc, endTime),
 
@@ -3002,7 +3015,7 @@ Faltam produtos do Packing:
             document.getElementById('packing-info-display').style.display = 'none';
             document.getElementById('meta-cancel-banner').style.display = 'none';
             document.getElementById('btn-confirm-order').style.display = 'none';
-
+            // Clear return/refund status banners
             ['rv-pack-status', 'fv-pack-status'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
             ['btn-return-incomplete', 'btn-refund-incomplete', 'btn-return-complete', 'btn-refund-complete', 'btn-refund-swipe', 'btn-refund-no-product', 'btn-refund-product-damaged', 'btn-refund-box-damaged'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
             try {
@@ -3026,6 +3039,8 @@ Faltam produtos do Packing:
             const inp = getActiveScanInput(); if (inp) { inp.value = ""; inp.focus(); }
         }
 
+        // --- OTHER LOGICS ---
+        // --- SEARCH: CARDS PER ID + MODAL FULL HISTORY + EXPORT (PERFORMANCE + FILTERS + TIMELINE) ---
         var searchCache = { ids: [], eventsById: {}, summaryById: {}, activeId: null };
 
         function _fmt(val) { return (val === undefined || val === null) ? "" : String(val); }
@@ -3035,7 +3050,7 @@ Faltam produtos do Packing:
         }
 
         function _nowTime() {
-
+            // HH:mm:ss always (24h). Storage must not depend on locale quirks.
             return new Intl.DateTimeFormat('pt-PT', {
                 hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
             }).format(new Date());
@@ -3045,6 +3060,9 @@ Faltam produtos do Packing:
             return (_fmt(dateClean) + " " + _fmt(timeStr)).trim(); // YYYY-MM-DD HH:mm:ss
         }
 
+
+
+        // Cache + helper to retrieve picking operator from registos when active_batches fields are not writable
         const _pickingInfoCache = {};
         async function getPickingInfo(batchId) {
             if (!batchId) return null;
@@ -3074,7 +3092,7 @@ Faltam produtos do Packing:
         }
 
         function _ptLocaleToDateTime(str) {
-
+            // Accepts: "DD/MM/YYYY, HH:MM:SS" or "DD/MM/YYYY HH:MM" etc.
             const s = _fmt(str).trim();
             const m = s.match(/(\d{2})\/(\d{2})\/(\d{4}).*?(\d{2}):(\d{2})(?::(\d{2}))?/);
             if (!m) return "";
@@ -3085,17 +3103,20 @@ Faltam produtos do Packing:
         function _normalizeDT(val, dateCleanFallback) {
             const s = _fmt(val).trim();
             if (!s) return "";
-
+            // Already ISO-ish
             if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(s)) return s;
 
+            // pt-PT locale string -> normalize to ISO-ish
             const pt = _ptLocaleToDateTime(s);
             if (pt) return pt;
 
+            // Time-only -> combine with dateClean
             if (/^\d{2}:\d{2}(:\d{2})?$/.test(s)) {
                 const t = (s.length === 5) ? (s + ":00") : s;
                 return _dtKey(dateCleanFallback || _nowDateClean(), t);
             }
 
+            // Fallback: return as-is
             return s;
         }
         function _parseIds(raw) {
@@ -3122,7 +3143,7 @@ Faltam produtos do Packing:
         }
 
         function _passesDate(dt, start, end) {
-
+            // dt format: "YYYY-MM-DD ..." or locale string; we use prefix compare when possible.
             if (!start && !end) return true;
             var d = _fmt(dt).slice(0, 10);
             if (start && d < start) return false;
@@ -3189,6 +3210,7 @@ Faltam produtos do Packing:
                 var events = searchCache.eventsById[id] || [];
                 if (events.length > 0) anyFound = true;
 
+                // apply status filter to cards (summary-based)
                 var status = _fmt(s.status || (events.length ? "FOUND" : "NOT FOUND"));
                 if (filters.status !== "ALL" && status !== filters.status) return;
 
@@ -3255,6 +3277,7 @@ Faltam produtos do Packing:
             var title = document.getElementById('id-history-title');
             if (title) title.innerText = "ID History - " + id;
 
+            // Render initial with filters
             applyIdHistoryFilters();
 
             document.getElementById('id-history-modal').style.display = 'flex';
@@ -3293,16 +3316,17 @@ Faltam produtos do Packing:
             var filtered = allEvents.filter(function (ev) {
                 if (!_passesDate(ev.DateTime, start, end)) return false;
                 if (!_passesType(_fmt(ev.Type), typeF)) return false;
-
+                // status filter in modal is summary-based; apply CANCELLED/PACKED to event types for usability
                 if (statusF === "CANCELLED" && _fmt(ev.Type) !== "CANCELLED") return false;
                 if (statusF === "PACKED" && _fmt(ev.Type) !== "PACKING") return false;
                 if (statusF === "PENDING") {
-
+                    // Pending = show OFFICE created + (optional) returns, but exclude packed/cancel events
                     if (_fmt(ev.Type) === "PACKING" || _fmt(ev.Type) === "CANCELLED") return false;
                 }
                 return true;
             });
 
+            // Table
             var tbody = document.querySelector('#id-history-table tbody');
             if (tbody) tbody.innerHTML = "";
             filtered.forEach(function (ev) {
@@ -3319,6 +3343,7 @@ Faltam produtos do Packing:
                     + "</tr>";
             });
 
+            // Timeline
             _renderTimeline(filtered);
         }
 
@@ -3388,7 +3413,7 @@ Faltam produtos do Packing:
             var regPromise, batchPromise;
 
             if (searchAll) {
-
+                // FULL SCAN (slow)
                 if (!confirm("SEARCH ALL RECORDS pode demorar. Continuar?")) {
                     if (container) container.innerHTML = "<div class='card' style='grid-column: 1 / -1;'><b>Search cancelled.</b></div>";
                     return;
@@ -3396,7 +3421,7 @@ Faltam produtos do Packing:
                 regPromise = db.ref('registos').once('value');
                 batchPromise = db.ref('active_batches').once('value');
             } else {
-
+                // PERFORMANCE: only pull data in the selected date range (needs index on dateClean)
                 var regRef = db.ref('registos');
                 if (start && end) regRef = regRef.orderByChild('dateClean').startAt(start).endAt(end);
                 else regRef = regRef.orderByChild('dateClean');
@@ -3419,6 +3444,7 @@ Faltam produtos do Packing:
                 var events = [];
                 var summary = { status: "PENDING" };
 
+                // BATCH CREATED + CANCELLED from active_batches (range-limited)
                 Object.entries(batchData).forEach(function (entry) {
                     var k = entry[0], b = entry[1];
                     if (!b) return;
@@ -3482,12 +3508,13 @@ Faltam produtos do Packing:
                     }
                 });
 
+                // PACKING/RETURNS from registos (range-limited)
                 Object.values(regData).forEach(function (r) {
                     if (!r || r.id !== sid) return;
                     if (r.mode !== 'PACKING' && !_isReturnMode(r.mode) && !_isRefundMode(r.mode)) return;
 
                     var batchKey = r.batch || "GENERAL";
-
+                    // batchData in range may not include this batch if its dateClean outside range; fallback read minimal batch info not done (perf tradeoff)
                     var b = batchData[batchKey] || {};
                     var batchName = b.name || batchKey;
                     var carrier = b.carrier || "N/A";
@@ -3574,7 +3601,7 @@ Faltam produtos do Packing:
 
         function openEditModal(batchId, readOnly = false) {
             if (!batchId) return;
-
+            // Keep only one modal listener at a time
             if (__modalBatchRef && __modalBatchCb) { __modalBatchRef.off('value', __modalBatchCb); }
             __modalBatchRef = db.ref('active_batches/' + batchId);
             __modalBatchCb = (snap) => {
@@ -3649,7 +3676,8 @@ Faltam produtos do Packing:
         }
 
         function loadBatchData(bId) {
-
+            // PACKING: allow clearing/changing the selected batch safely.
+            // Without this, an old saved batch could keep the selector stuck or leave stale activeBatchData.
             if (!bId) {
                 localStorage.removeItem('lastPackingBatch');
                 if (activeBatchPath) db.ref(activeBatchPath).off();
@@ -3672,11 +3700,12 @@ Faltam produtos do Packing:
                     updatePackingGuidance();
                     return;
                 }
-
+                // 🛡️ GUARD: si hay un ID activo en sesión con volúmenes ya picados,
+                // y el nuevo snapshot cambia order_volumes, recalcular antes de actualizar.
                 const oldVols = (activeBatchData && activeBatchData.order_volumes) || {};
                 const newVols = newData.order_volumes || {};
                 activeBatchData = newData;
-
+                // Si cambiaron los volúmenes y hay un ID activo procesando trackings, avisar
                 if (scanData && scanData.id && JSON.stringify(oldVols[scanData.id]) !== JSON.stringify(newVols[scanData.id])) {
                     console.warn('[PACKING] order_volumes actualizado para ID activo:', scanData.id, '->', newVols[scanData.id]);
                 }
@@ -3687,7 +3716,7 @@ Faltam produtos do Packing:
         }
 
         function updateProcessedTable(bId) {
-
+            // Listen only to records for this batch (avoid pulling ALL registos)
             if (__processedRegRef && __processedRegCb) { __processedRegRef.off('value', __processedRegCb); }
 
             __processedRegRef = db.ref('registos').orderByChild('batch').equalTo(bId).limitToLast(5000);
@@ -3705,6 +3734,7 @@ Faltam produtos do Packing:
                     rows.push({ key, r });
                 });
 
+                // newest first by DateTime/ts
                 rows.sort((a, b) => {
                     const ra = a.r || {}, rb = b.r || {};
                     const dta = (ra.DateTime || _dtKey(ra.dateClean || "", ra.endTime || ra.time || ""));
@@ -3736,7 +3766,7 @@ Faltam produtos do Packing:
 
             if (processedRequiredCount < requiredCount) {
                 const missing = requiredIds.filter(id => !processedMap[id]);
-
+                // show up to 10 missing to avoid huge alerts
                 const sample = missing.slice(0, 10).join(', ');
                 const more = missing.length > 10 ? ` (+${missing.length - 10} more)` : '';
                 return alert(`ERRO: Faltam ${requiredCount - processedRequiredCount} IDs (excluindo cancelados).
@@ -3751,9 +3781,11 @@ Missing: ${sample}${more}`);
             }
         }
 
+
         function loadPickingList() {
             const bId = document.getElementById('pick-batch-select').value; if (!bId) return;
 
+            // Register active picking session so Overview shows who is picking in real time
             const pickingUser = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : 'UNKNOWN';
             const pickingStarted = _nowDateTime();
             db.ref('active_batches/' + bId + '/pickingSession').set({
@@ -3781,6 +3813,7 @@ Missing: ${sample}${more}`);
                 return alert("ERRO: utilizador não autenticado.");
             }
 
+            // 🛡️ GUARD: verificar status actual en Firebase antes de escribir
             try {
                 const statusSnap = await db.ref('active_batches/' + bId + '/status').once('value');
                 const currentStatus = String(statusSnap.val() || '').trim().toUpperCase();
@@ -3796,9 +3829,10 @@ Missing: ${sample}${more}`);
             const tm = _nowTime();
             const dt = _dtKey(dc, tm);
 
+            // Write directly to /status path so @wh.com rules are evaluated correctly
             db.ref('active_batches/' + bId + '/status').set('READY_TO_PACK')
                 .then(() => {
-
+                    // Best-effort extra writes (do not block finishing picking if rules reject them)
                     const extra = [
                         db.ref('active_batches/' + bId).update({
                             pickedBy: pickedBy,
@@ -3806,9 +3840,9 @@ Missing: ${sample}${more}`);
                             pickedTime: tm,
                             pickedAt: dt
                         }),
-
+                        // Clear the live picking session now that it's done
                         db.ref('active_batches/' + bId + '/pickingSession').remove(),
-
+                        // Local history (if permitted)
                         db.ref(`active_batches/${bId}/history`).push({
                             dateClean: dc,
                             time: tm,
@@ -3817,7 +3851,7 @@ Missing: ${sample}${more}`);
                             user: pickedBy,
                             msg: "PICKING COMPLETE"
                         }),
-
+                        // Global activity log (if permitted)
                         db.ref('registos').push({
                             mode: "PICKING",
                             batch: bId,
@@ -3849,6 +3883,7 @@ Missing: ${sample}${more}`);
                     const tot = requiredIds.length, done = requiredIds.filter(id => (b.processed_ids && b.processed_ids[id])).length;
                     const perc = tot > 0 ? Math.round((done / tot) * 100) : 0;
 
+                    // Live picking session badge (someone is picking RIGHT NOW)
                     let livePickHtml = '';
                     if (b.pickingSession && b.pickingSession.user) {
                         livePickHtml = `<div style="margin-top:6px; background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:6px 10px; font-size:12px; font-weight:900; color:#856404;">
@@ -3857,11 +3892,12 @@ Missing: ${sample}${more}`);
                     </div>`;
                     }
 
+                    // Picked by (completed) — always show; fallback async lookup if missing
                     let pickedHtml = '';
                     if (b.pickedBy) {
                         pickedHtml = `<div style="margin-top:6px; font-size:12px; color:#444;"><b>Picked by:</b> ${b.pickedBy}${b.pickedAt ? ` <span style="color:#666;">@ ${b.pickedAt}</span>` : ''}</div>`;
                     } else if (b.status === 'READY_TO_PACK' || b.status === 'COMPLETED') {
-
+                        // Async lookup from registos — renders after
                         const cardId = 'picked-meta-' + b.id;
                         pickedHtml = `<div id="${cardId}" style="margin-top:6px; font-size:12px; color:#999;">A carregar quem recolheu...</div>`;
                         getPickingInfo(b.id).then(info => {
@@ -3892,7 +3928,8 @@ Missing: ${sample}${more}`);
 
         function __renderOverviewForDate(fD) {
             const bts = __overviewCacheBatches || {};
-
+            // Safety net: if a batch is already 100% packed but stayed READY_TO_PACK,
+            // move it to COMPLETED automatically when Overview/filters refresh.
             autoCompleteOverviewBatchesIf100Percent(bts, fD);
             updateDashboardStats(bts, fD, __overviewCachePrepackCount);
             updatePickingMiniDashboard(bts, fD);
@@ -3904,6 +3941,7 @@ Missing: ${sample}${more}`);
             if (__cfgBound) return;
             __cfgBound = true;
 
+            // Small config nodes can stay realtime (low traffic)
             db.ref('config/master_products').on('value', s => { masterProductsDB = s.val() || {}; });
             db.ref('config/carriers').on('value', s => {
                 const carriers = s.val() || ["CTT", "NACEX", "CORREOS"];
@@ -3915,12 +3953,15 @@ Missing: ${sample}${more}`);
             });
         }
 
+
+        // --- PICKING DATE FILTER (allows future batches, e.g., tomorrow) ---
         function setPickingDate(d) {
             const gd = document.getElementById('global-date-filter');
             if (gd) gd.value = d;
             syncGlobalData();
         }
 
+        // --- PACKING DATE FILTER (allows packing tomorrow batches, etc.) ---
         function setPackingDate(d) {
             const gd = document.getElementById('global-date-filter');
             if (gd) gd.value = d;
@@ -3941,8 +3982,9 @@ Missing: ${sample}${more}`);
             } catch (e) { }
             const today = _nowDateClean();
 
+            // Realtime only when viewing TODAY
             if (fD === today) {
-
+                // Active batches realtime
                 if (!__overviewBatchesRef) {
                     __overviewBatchesRef = db.ref('active_batches');
                     __overviewBatchesCb = (snap) => {
@@ -3952,6 +3994,7 @@ Missing: ${sample}${more}`);
                     __overviewBatchesRef.on('value', __overviewBatchesCb);
                 }
 
+                // Pre-pack count realtime only for today
                 if (!__overviewPrepackRef) {
                     __overviewPrepackRef = db.ref('pre_packing').orderByChild('dateClean').equalTo(today);
                     __overviewPrepackCb = (snap) => {
@@ -3961,10 +4004,12 @@ Missing: ${sample}${more}`);
                     __overviewPrepackRef.on('value', __overviewPrepackCb);
                 }
 
+                // Render immediately using whatever cache we have
                 __renderOverviewForDate(fD);
                 return;
             }
 
+            // Older dates: no realtime listeners; load only on demand
             __stopOverviewRealtime();
 
             try {
@@ -3989,14 +4034,14 @@ Missing: ${sample}${more}`);
                 document.getElementById('meta-cust-name').innerText = activeBatchData.order_details[id].name;
                 document.getElementById('meta-inv-content').innerText = activeBatchData.order_details[id].content;
             }
-
+            // Volumes badge
             const vols = (activeBatchData.order_volumes && activeBatchData.order_volumes[id]) || 1;
             const badge = document.getElementById('meta-volumes-badge');
             if (badge) {
                 if (vols > 1) {
                     badge.style.display = 'block';
                     badge.textContent = `📦 ${vols} VOLUMES`;
-
+                    // Show custom modal instead of alert
                     const modal = document.getElementById('volumes-alert-modal');
                     const msg = document.getElementById('volumes-alert-msg');
                     if (modal && msg) {
@@ -4096,6 +4141,8 @@ Missing: ${sample}${more}`);
                 const savedWH = localStorage.getItem('lastPackingBatch') || '';
                 const wantedWH = prevWH || savedWH;
 
+                // Do not rebuild the PACKING selector on every realtime refresh if the options are the same.
+                // Rebuilding while the operator is opening the dropdown can make it impossible to select a batch.
                 if (selWH.dataset.lastOptions !== whOpt) {
                     selWH.innerHTML = whOpt;
                     selWH.dataset.lastOptions = whOpt;
@@ -4105,6 +4152,7 @@ Missing: ${sample}${more}`);
                     selWH.value = wantedWH;
                     if (savedWH !== wantedWH) localStorage.setItem('lastPackingBatch', wantedWH);
 
+                    // If the selector has a saved/visible value but the batch was not loaded yet, load it once.
                     if (activeBatchPath !== ('active_batches/' + wantedWH)) {
                         setTimeout(function () {
                             const currentValue = selWH.value;
@@ -4112,7 +4160,7 @@ Missing: ${sample}${more}`);
                         }, 0);
                     }
                 } else if (prevWH || savedWH) {
-
+                    // Old saved batch is no longer available for this date/status.
                     localStorage.removeItem('lastPackingBatch');
                     if (!selWH.value) loadBatchData('');
                 }
@@ -4145,7 +4193,7 @@ Missing: ${sample}${more}`);
                     const oid = p[0].trim();
                     ids.push(oid);
                     det[oid] = { name: p[1] || "N/A", content: p[2] || "N/A" };
-
+                    // Optional 4th column = volumes for this ID. If blank, defaults to 1.
                     const v = parseInt(p[3], 10);
                     if (!isNaN(v) && v > 1) orderVols[oid] = v;
                 }
@@ -4177,6 +4225,7 @@ Missing: ${sample}${more}`);
             });
         }
 
+        // --- PRE-PACKING + RECENT RETURNS (uniform date/time + no locale strings) ---
         function handlePrePack(v) {
             const raw = (v || "").toString().trim();
             if (!raw) return;
@@ -4186,6 +4235,7 @@ Missing: ${sample}${more}`);
             const tm = _nowTime();
             const user = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN";
 
+            // Try resolve product name from master DB (keep graceful fallbacks)
             const mp = masterProductsDB ? (masterProductsDB[code] || masterProductsDB[raw] || null) : null;
             const prodName = (mp && typeof mp === 'object')
                 ? (mp.name || mp.product || mp.title || mp.ref || raw)
@@ -4215,8 +4265,10 @@ Missing: ${sample}${more}`);
             const today = _nowDateClean();
             const u = (currentUser && currentUser.email) ? currentUser.email.split('@')[0].toUpperCase() : "UNKNOWN";
 
+            // Avoid duplicate listeners when re-entering tab
             if (__returnsTodayRef && __returnsTodayCb) { __returnsTodayRef.off('value', __returnsTodayCb); }
 
+            // Only THIS USER (mobile-friendly). We filter by dateClean client-side to avoid compound-index needs.
             __returnsTodayRef = db.ref('registos').orderByChild('user').equalTo(u).limitToLast(400);
             __returnsTodayCb = (snap) => {
                 const rows = [];
@@ -4226,8 +4278,10 @@ Missing: ${sample}${more}`);
                     const mode = (r.mode || r.Type || "").toString().toUpperCase();
                     if (!_isReturnMode(mode)) return;
 
+                    // Only the selected day (today) on this realtime view
                     if ((r.dateClean || "") !== today) return;
 
+                    // Extra guard (should be redundant with query)
                     if (((r.user || "").toString().toUpperCase()) !== u) return;
 
                     const dc = r.dateClean || "";
@@ -4318,6 +4372,7 @@ Missing: ${sample}${more}`);
 
             if (__prepackTodayRef && __prepackTodayCb) { __prepackTodayRef.off('value', __prepackTodayCb); }
 
+            // Only THIS USER (mobile-friendly). We filter by dateClean client-side to avoid compound-index needs.
             __prepackTodayRef = db.ref('pre_packing').orderByChild('user').equalTo(u).limitToLast(400);
             __prepackTodayCb = (snap) => {
                 const rows = [];
@@ -4325,8 +4380,10 @@ Missing: ${sample}${more}`);
                     const k = ch.key;
                     const p = ch.val() || {};
 
+                    // Only the selected day (today) on this realtime view
                     if ((p.dateClean || "") !== today) return;
 
+                    // Extra guard (should be redundant with query)
                     if (((p.user || "").toString().toUpperCase()) !== u) return;
 
                     const tm = p.time || "";
@@ -4356,7 +4413,7 @@ Missing: ${sample}${more}`);
             if (isNaN(idx) || idx < 0 || idx >= scanData.prods.length) return;
             scanData.prods.splice(idx, 1);
             updateDisplay(currentMode);
-
+            // RETURNS/REFUNDS need to re-check COMPLETE vs INCOMPLETE after removing a product.
             if (_isReturnMode(currentMode) || _isRefundMode(currentMode)) {
                 updateReturnRefundStatus(currentMode);
                 if (scanData.id) {
@@ -4371,17 +4428,18 @@ Missing: ${sample}${more}`);
         }
 
         function updateDisplay(m) {
-
+            // Update top labels for PACKING UI
             const idEl = document.getElementById('v-id');
             const trEl = document.getElementById('v-track');
 
             if (idEl) idEl.textContent = scanData.id || "-";
-
+            // Show all trackings if multiple
             if (trEl) {
                 const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : (scanData.track ? [scanData.track] : []);
                 trEl.textContent = allTracks.length > 0 ? allTracks.join(' | ') : "-";
             }
 
+            // Render scanned products (always show in v-prods)
             const prodsEl = document.getElementById('v-prods');
             const list = Array.isArray(scanData.prods) ? scanData.prods : [];
             if (prodsEl) {
@@ -4391,12 +4449,16 @@ Missing: ${sample}${more}`);
                 });
             }
 
+            // IMPORTANT:
+            // In PACKING, #meta-inv-content is "EXPECTED CONTENT" (from batch order_details).
+            // Do NOT overwrite it with scanned products.
             if ((m || currentMode) !== 'PACKING') {
-
+                // For returns/prepack contexts (if the element exists on screen), show the scanned items list.
                 const metaEl = document.getElementById('meta-inv-content');
                 if (metaEl) metaEl.textContent = list.length ? list.join(", ") : "-";
             }
 
+            // Returns UI (rv-*)
             const rvId = document.getElementById('rv-id');
             const rvTr = document.getElementById('rv-track');
             const rvProds = document.getElementById('rv-prods');
@@ -4411,6 +4473,7 @@ Missing: ${sample}${more}`);
                 }
             }
 
+            // Refunds UI (fv-*)
             const fvId = document.getElementById('fv-id');
             const fvTr = document.getElementById('fv-track');
             const fvProds = document.getElementById('fv-prods');
@@ -4440,6 +4503,8 @@ Missing: ${sample}${more}`);
             }
         })();
 
+
+        // --- FIX: CANCEL BUTTON IN EDIT BATCH MODAL ---
         async function cancelBatchId(batchId, orderId) {
             try {
                 const reason = prompt(`Motivo do cancelamento para o ID ${orderId}?`);
@@ -4455,10 +4520,13 @@ Missing: ${sample}${more}`);
                     ts: Date.now()
                 };
 
+                // Store cancellation info
                 await db.ref(`active_batches/${batchId}/cancelled_ids/${orderId}`).set(payload);
 
+                // If it was marked processed, remove to avoid PACKED + CANCELLED inconsistency
                 await db.ref(`active_batches/${batchId}/processed_ids/${orderId}`).remove();
 
+                // Log action in batch history
                 logBatchAction(batchId, `CANCELLED ID: ${orderId} | Reason: ${payload.reason}`);
 
                 alert(`ID ${orderId} cancelado com sucesso.`);
@@ -4471,7 +4539,7 @@ Missing: ${sample}${more}`);
     </script>
 
     <script>
-
+        // ===== OPS HARD GUARD (Profile C: OPS locked / Office sees all) =====
         (function () {
             var PROFILE = "OPS";
             var ALLOWED = ['sec-picking', 'sec-prepacking', 'sec-prepack', 'sec-returns', 'sec-refunds', 'sec-warehouse', 'sec-packing'];
@@ -4481,7 +4549,7 @@ Missing: ${sample}${more}`);
             }
 
             function hardRemoveNav() {
-
+                // Remove nav elements that target non-allowed sections
                 var navItems = document.querySelectorAll(".nav-item, .nav-btn, .tab-btn, button, a");
                 navItems.forEach(function (el) {
                     var oc = el.getAttribute("onclick") || "";
@@ -4499,7 +4567,7 @@ Missing: ${sample}${more}`);
             }
 
             function forceAllowedTab() {
-
+                // ensure only allowed is active
                 var active = document.querySelector(".section.active");
                 if (active && !isAllowed(active.id)) active.classList.remove("active");
                 var ok = document.querySelector(".section.active");
@@ -4516,7 +4584,7 @@ Missing: ${sample}${more}`);
             }
 
             function lockTabFunction() {
-
+                // Wrap existing tab function to block forbidden
                 if (typeof window.tab === 'function' && !window.__tab_wrapped) {
                     var orig = window.tab;
                     window.tab = function (secId, el) {
@@ -4528,7 +4596,7 @@ Missing: ${sample}${more}`);
                     };
                     window.__tab_wrapped = true;
                 }
-
+                // Also wrap switchSection/showSection if they exist
                 ['switchSection', 'showSection'].forEach(function (fn) {
                     if (typeof window[fn] === 'function' && !window['__' + fn + '_wrapped']) {
                         var orig2 = window[fn];
@@ -4571,6 +4639,7 @@ Missing: ${sample}${more}`);
                 setTimeout(enforce, 1800);
             });
 
+            // keep enforcing after login UI flip
             setInterval(function () {
                 var main = document.getElementById('main-interface');
                 if (main && main.style.display !== 'none') {
@@ -4580,8 +4649,9 @@ Missing: ${sample}${more}`);
         })();
     </script>
 
-    <script>
 
+    <script>
+        // ===== UI TOP BAR + ERROR OVERLAY (robust auth binding) =====
         (function () {
             function ensureErrorOverlay() {
                 if (document.getElementById('__err_overlay')) return;
@@ -4660,7 +4730,7 @@ Missing: ${sample}${more}`);
             }
 
             function bindAuthListener() {
-
+                // Try multiple ways to reach auth instance (auth var or firebase.auth())
                 var authInst = null;
                 try { if (window.auth && auth.onAuthStateChanged) authInst = auth; } catch (_) { }
                 if (!authInst) {
@@ -4674,7 +4744,7 @@ Missing: ${sample}${more}`);
                 authInst.onAuthStateChanged(function (u) {
                     if (u && u.email) {
                         setBadge('__user_badge', 'User: ' + u.email);
-
+                        // infer role by domain if present
                         var email = String(u.email).toLowerCase();
                         var role = (email.endsWith('@admin.com') ? 'ADMIN' : (email.endsWith('@wh.com') ? 'WH' : 'USER'));
                         setBadge('__role_badge', 'Role: ' + role, '#1f2937');
@@ -4709,7 +4779,7 @@ Missing: ${sample}${more}`);
                 ensureTopBar();
                 bindDbListener();
                 if (bindAuthListener()) return;
-
+                // keep trying for a few seconds until firebase/auth is initialized
             }
 
             document.addEventListener('DOMContentLoaded', function () {
@@ -4724,6 +4794,7 @@ Missing: ${sample}${more}`);
                 }, 250);
             });
         })();
+
 
         /* === SAVING NOTICE / DOUBLE-CLICK GUARD === */
         (function () {
@@ -4826,192 +4897,6 @@ Missing: ${sample}${more}`);
         })();
         /* === END SAVING NOTICE / DOUBLE-CLICK GUARD === */
 
-    </script>
-
-    <script>
-    (function() {
-        window.__lang = 'pt';
-
-        var T = {
-            pt: {
-                SIGN_IN: 'ENTRAR', LOGOUT: 'SAIR',
-                login_pass: 'Senha', login_email: 'Email (@admin.com / @wh.com)',
-                WAREHOUSE_OVERVIEW: '🌍 Visão Geral do Armazém',
-                TOTAL_PRINTED: 'Total Impresso', PENDING_PACKING: 'Pendente PACKING',
-                PACKED_TODAY: 'Embalado Hoje', PREPACKED_TODAY: 'Pré-Embalado Hoje',
-                DEEP_SEARCH: '🔍 Pesquisa Detalhada de Encomendas',
-                SEARCH_HINT: 'Cola IDs de encomendas para ver o histórico completo agrupado por ID.',
-                START_DATE: 'Data Início', END_DATE: 'Data Fim',
-                SEARCH_ALL: 'PESQUISAR TODOS OS REGISTOS (lento)',
-                SEARCH_ALL_HINT: 'Usar quando não se sabe a data.',
-                EVENT_TYPE: 'Tipo de Evento', STATUS_LBL: 'Estado',
-                SEARCH_HISTORY: 'PESQUISAR HISTÓRICO', EXPORT_ALL: 'EXPORTAR TUDO (EXCEL)',
-                OPERATOR_PERF: '📊 Desempenho dos Operadores',
-                OPERATOR: 'Operador', PACKED_TH: 'Embalado', RETURNS_TH: 'Devoluções',
-                PRE_PACKS: 'Pré-Packings', TOTAL: 'Total',
-                REPORTS_TITLE: '📁 Relatórios e Exportações Excel',
-                EXPORT_DATE_RANGE: '1. Exportar por Intervalo de Datas',
-                START_DATE_LBL: 'Data Início:', END_DATE_LBL: 'Data Fim:',
-                EXPORT_ACT: 'PACKING/Devoluções', EXPORT_PREPACK: 'Pré-PACKING',
-                CARRIER_REPORT: '2. Relatório de Transportadoras',
-                CARRIER_REPORT_HINT: 'Exportar lista ID | Transportadora | Tempos.',
-                GROUP_BY_CARRIER: 'Agrupar por Transportadora',
-                TIMES_INCL: '* Tempos Início/Fim/Confirmação incluídos.',
-                PICKING_PHASE: '🧺 Fase de PICKING',
-                BATCHES_TO_PICK: 'Lotes por recolher', IDS_TO_PICK: 'IDs por recolher',
-                PRODS_TO_PICK: 'Produtos por recolher',
-                VIEW_DETAILS: 'VER DETALHES', SELECT_ALL: 'SELECIONAR TUDO',
-                FINISH_PICKING: 'PICKING COMPLETO -> MOVER PARA PACKING',
-                SELECT_BATCH: '1. Selecionar Lote Ativo',
-                ORDER_CANCELLED: 'ENCOMENDA CANCELADA!', CLEAR_SCAN: 'LIMPAR PICAGEM',
-                CUSTOMER_LBL: 'CLIENTE:', EXPECTED_CONTENT: 'CONTEÚDO ESPERADO:',
-                ID_COMPLETE: 'ID COMPLETO',
-                SCANNED_IDS: '📦 IDs Picados neste Lote (Concluídos)',
-                TIME_TH: 'Hora', ORDER_ID: 'ID Pedido', CUSTOMER_TH: 'Cliente',
-                ACTIONS: 'Ações', FINALIZE_BATCH: 'FINALIZAR LOTE',
-                RETURNS_SCANNER: '🔄 SCANNER DEVOLUÇÕES',
-                SCAN_PH: 'PICAR ID, TRACK OU PRODUTO...',
-                RETURN_COMPLETE: '✅ DEVOLUÇÃO COMPLETA',
-                RETURN_INCOMPLETE: '⚠️ DEVOLUÇÃO INCOMPLETA',
-                RECENT_RETURNS: 'Devoluções Recentes',
-                REFUNDS_SCANNER: '💸 SCANNER REEMBOLSOS',
-                REFUND_COMPLETE: '✅ REEMBOLSO COMPLETO',
-                REFUND_INCOMPLETE: '⚠️ REEMBOLSO INCOMPLETO',
-                RECENT_REFUNDS: 'Reembolsos Recentes',
-                USER_TH: 'Utilizador', ITEMS_TH: 'Artigos',
-                STATUS_TH: 'Estado', ACTION_TH: 'Ação',
-                TODAYS_PREPACKS: 'Pré-Packings de Hoje',
-                PRODUCT_TH: 'Produto',
-                MASTER_DB: '📋 Base de Dados de Produtos',
-                UPLOAD_CSV: 'CARREGAR CSV', SEARCH_PH: 'Pesquisar...',
-                BARCODE: 'Código de Barras', PRODUCT_NAME: 'Nome do Produto',
-                CREATE_BATCH_H: '📦 Criar Novo Lote', BATCH_NAME_PH: 'Nome',
-                CREATE_BATCH_BTN: 'CRIAR LOTE',
-                DELETE_BATCH: 'APAGAR LOTE INTEIRO',
-                INVENTORY_STATUS: '📦 Estado do Inventário',
-                QTY_TH: 'Qtd', POS_TH: 'Pos', DEL_TH: 'Apag',
-                MOD_LOG: '📊 Registo de Modificações',
-                ORDER_TRACKING: '🆔 Mapeamento de Encomendas',
-                CANCEL_LOG: '🚫 Registo de Cancelamentos',
-                CLOSE_WINDOW: 'FECHAR JANELA', CLOSE: 'FECHAR',
-                EXPORT_THIS_ID: 'EXPORTAR ESTE ID',
-                START_LBL: 'Início', END_LBL: 'Fim', TYPE_LBL: 'Tipo',
-                APPLY: 'APLICAR',
-                DATETIME: 'Data/Hora', BATCH_TH: 'Lote', CARRIER_TH: 'Transportadora',
-                TRACKING_TH: 'Tracking', ITEMS_CONTENT: 'Artigos / Conteúdo',
-                DETAILS_TH: 'Detalhes',
-                NAV_OVERVIEW: 'VISÃO GERAL', NAV_SEARCH: 'PESQUISA',
-                NAV_PERFORMANCE: 'DESEMPENHO', NAV_REPORTS: 'RELATÓRIOS',
-                NAV_PREPACK: 'PRÉ-PACKING', NAV_MASTERDATA: 'BASE DE DADOS',
-                NAV_OFFICE: 'ESCRITÓRIO', NAV_PICKING: 'PICKING',
-                NAV_PACKING: 'PACKING', NAV_RETURNS: 'DEVOLUÇÕES',
-                NAV_REFUNDS: 'REEMBOLSOS',
-            },
-            en: {
-                SIGN_IN: 'SIGN IN', LOGOUT: 'LOGOUT',
-                login_pass: 'Password', login_email: 'Email (@admin.com / @wh.com)',
-                WAREHOUSE_OVERVIEW: '🌍 Warehouse Overview',
-                TOTAL_PRINTED: 'Total Printed', PENDING_PACKING: 'Pending PACKING',
-                PACKED_TODAY: 'Packed Today', PREPACKED_TODAY: 'Pre-Packed Today',
-                DEEP_SEARCH: '🔍 Deep Order Search',
-                SEARCH_HINT: 'Paste Order IDs to see full history grouped by ID.',
-                START_DATE: 'Start Date', END_DATE: 'End Date',
-                SEARCH_ALL: 'SEARCH ALL RECORDS (slow)',
-                SEARCH_ALL_HINT: "Use when you don't know the date.",
-                EVENT_TYPE: 'Event Type', STATUS_LBL: 'Status',
-                SEARCH_HISTORY: 'SEARCH HISTORY', EXPORT_ALL: 'EXPORT ALL (EXCEL)',
-                OPERATOR_PERF: '📊 Operator Performance',
-                OPERATOR: 'Operator', PACKED_TH: 'Packed', RETURNS_TH: 'Returns',
-                PRE_PACKS: 'Pre-Packs', TOTAL: 'Total',
-                REPORTS_TITLE: '📁 Excel Reports & Exports',
-                EXPORT_DATE_RANGE: '1. Export by Date Range',
-                START_DATE_LBL: 'Start Date:', END_DATE_LBL: 'End Date:',
-                EXPORT_ACT: 'PACKING/Returns', EXPORT_PREPACK: 'Pre-PACKING',
-                CARRIER_REPORT: '2. Transport Carrier Report',
-                CARRIER_REPORT_HINT: 'Export ID | Carrier | Timestamps list.',
-                GROUP_BY_CARRIER: 'Group by Carrier',
-                TIMES_INCL: '* Start/End/Confirmed times included.',
-                PICKING_PHASE: '🧺 PICKING Phase',
-                BATCHES_TO_PICK: 'Batches to pick', IDS_TO_PICK: 'IDs to pick',
-                PRODS_TO_PICK: 'Products to pick',
-                VIEW_DETAILS: 'VIEW DETAILS', SELECT_ALL: 'SELECT ALL',
-                FINISH_PICKING: 'PICKING COMPLETE -> MOVE TO PACKING',
-                SELECT_BATCH: '1. Select Active Batch',
-                ORDER_CANCELLED: 'ORDER CANCELLED!', CLEAR_SCAN: 'CLEAR SCAN',
-                CUSTOMER_LBL: 'CUSTOMER:', EXPECTED_CONTENT: 'EXPECTED CONTENT:',
-                ID_COMPLETE: 'ID COMPLETE',
-                SCANNED_IDS: '📦 IDs Scanned in this Batch (Completed)',
-                TIME_TH: 'Time', ORDER_ID: 'Order ID', CUSTOMER_TH: 'Customer',
-                ACTIONS: 'Actions', FINALIZE_BATCH: 'FINALIZE BATCH',
-                RETURNS_SCANNER: '🔄 RETURNS SCANNER',
-                SCAN_PH: 'SCAN ID, TRACK OR PRODUCT...',
-                RETURN_COMPLETE: '✅ RETURN COMPLETE',
-                RETURN_INCOMPLETE: '⚠️ RETURN INCOMPLETE',
-                RECENT_RETURNS: 'Recent Returns',
-                REFUNDS_SCANNER: '💸 REFUNDS SCANNER',
-                REFUND_COMPLETE: '✅ REFUND COMPLETE',
-                REFUND_INCOMPLETE: '⚠️ REFUND INCOMPLETE',
-                RECENT_REFUNDS: 'Recent Refunds',
-                USER_TH: 'User', ITEMS_TH: 'Items',
-                STATUS_TH: 'Status', ACTION_TH: 'Action',
-                TODAYS_PREPACKS: "Today's Pre-Packings",
-                PRODUCT_TH: 'Product',
-                MASTER_DB: '📋 Master Product Database',
-                UPLOAD_CSV: 'UPLOAD CSV', SEARCH_PH: 'Search...',
-                BARCODE: 'Barcode', PRODUCT_NAME: 'Product Name',
-                CREATE_BATCH_H: '📦 Create New Batch', BATCH_NAME_PH: 'Name',
-                CREATE_BATCH_BTN: 'CREATE BATCH',
-                DELETE_BATCH: 'DELETE ENTIRE BATCH',
-                INVENTORY_STATUS: '📦 Inventory Status',
-                QTY_TH: 'Qty', POS_TH: 'Pos', DEL_TH: 'Del',
-                MOD_LOG: '📊 Modification Log',
-                ORDER_TRACKING: '🆔 Order Mapping & Full Tracking',
-                CANCEL_LOG: '🚫 Cancellation Reasons Log',
-                CLOSE_WINDOW: 'CLOSE WINDOW', CLOSE: 'CLOSE',
-                EXPORT_THIS_ID: 'EXPORT THIS ID',
-                START_LBL: 'Start', END_LBL: 'End', TYPE_LBL: 'Type',
-                APPLY: 'APPLY',
-                DATETIME: 'Date/Time', BATCH_TH: 'Batch', CARRIER_TH: 'Carrier',
-                TRACKING_TH: 'Tracking', ITEMS_CONTENT: 'Items / Content',
-                DETAILS_TH: 'Details',
-                NAV_OVERVIEW: 'OVERVIEW', NAV_SEARCH: 'SEARCH',
-                NAV_PERFORMANCE: 'PERFORMANCE', NAV_REPORTS: 'REPORTS',
-                NAV_PREPACK: 'PRE-PACKING', NAV_MASTERDATA: 'MASTER DATA',
-                NAV_OFFICE: 'OFFICE', NAV_PICKING: 'PICKING',
-                NAV_PACKING: 'PACKING', NAV_RETURNS: 'RETURNS',
-                NAV_REFUNDS: 'REFUNDS',
-            }
-        };
-
-        window.t = function(key) {
-            var lang = window.__lang || 'pt';
-            var val = (T[lang] && T[lang][key] !== undefined) ? T[lang][key] : (T['pt'][key] || key);
-            return val;
-        };
-
-        window.__rebuildNav = function() {};
-
-        window.applyLang = function(lang) {
-            window.__lang = lang;
-            var btnPt = document.getElementById('btn-lang-pt');
-            var btnEn = document.getElementById('btn-lang-en');
-            if (btnPt) { btnPt.style.opacity = lang==='pt'?'1':'0.5'; btnPt.style.borderColor = lang==='pt'?'#3498db':'transparent'; }
-            if (btnEn) { btnEn.style.opacity = lang==='en'?'1':'0.5'; btnEn.style.borderColor = lang==='en'?'#3498db':'transparent'; }
-            document.querySelectorAll('[data-i18n]').forEach(function(el) {
-                var key = el.getAttribute('data-i18n');
-                var tr = T[lang] && T[lang][key] !== undefined ? T[lang][key] : null;
-                if (tr !== null) el.innerHTML = tr;
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
-                var key = el.getAttribute('data-i18n-placeholder');
-                var tr = T[lang] && T[lang][key] !== undefined ? T[lang][key] : null;
-                if (tr !== null) el.placeholder = tr;
-            });
-            if (typeof window.__rebuildNav === 'function') window.__rebuildNav();
-        };
-
-        document.addEventListener('DOMContentLoaded', function() { applyLang('pt'); });
-    })();
     </script>
 
 </body>
