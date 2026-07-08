@@ -612,7 +612,7 @@
             style="background:white; border-radius:25px; width:100%; max-width:480px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5); text-align:center;">
             <div style="background:#f59e0b; padding:30px 20px;">
                 <div style="font-size:60px;">📦</div>
-                <div style="font-size:32px; font-weight:900; color:white; margin-top:10px;" id="volumes-alert-title">
+                <div style="font-size:32px; font-weight:900; color:white; margin-top:10px;" id="volumes-alert-title" data-i18n="ATENÇÃO">
                     ATENÇÃO</div>
             </div>
             <div style="padding:30px 25px;">
@@ -621,7 +621,7 @@
                 <button
                     onclick="document.getElementById('volumes-alert-modal').style.display='none'; document.getElementById('main-input').focus();"
                     style="margin-top:30px; width:100%; padding:25px; font-size:24px; font-weight:900; background:#f59e0b; color:white; border:none; border-radius:15px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
-                    OK, ENTENDIDO
+                    <span data-i18n="OK, ENTENDIDO">OK, ENTENDIDO</span>
                 </button>
             </div>
         </div>
@@ -637,7 +637,7 @@
                 <div style="font-size:72px; line-height:1;">✅</div>
                 <div
                     style="font-size:48px; font-weight:1000; margin-top:12px; text-transform:uppercase; letter-spacing:1px; line-height:1.05;">
-                    LOTE COMPLETO</div>
+                    <span data-i18n="LOTE COMPLETO">LOTE COMPLETO</span></div>
             </div>
             <div style="padding:34px 24px;">
                 <div id="packing-complete-batch-name"
@@ -645,14 +645,14 @@
                 </div>
                 <div
                     style="font-size:42px; line-height:1.08; font-weight:1000; color:#1d4ed8; text-transform:uppercase; margin-bottom:10px;">
-                    SELECIONAR<br>NOVO LOTE
+                    <span data-i18n="SELECIONAR NOVO LOTE">SELECIONAR<br>NOVO LOTE</span>
                 </div>
                 <div style="font-size:20px; line-height:1.35; font-weight:800; color:#475569; margin-top:12px;">
-                    Todos os IDs deste lote foram concluídos. Escolhe outro lote para continuar o Packing.
+                    <span data-i18n="Todos os IDs deste lote foram concluídos. Escolhe outro lote para continuar o Packing.">Todos os IDs deste lote foram concluídos. Escolhe outro lote para continuar o Packing.</span>
                 </div>
                 <button onclick="closePackingCompleteModal()"
                     style="margin-top:30px; width:100%; padding:28px 20px; font-size:30px; font-weight:1000; background:#1d4ed8; color:white; border:none; border-radius:18px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
-                    OK, SELECIONAR LOTE
+                    <span data-i18n="OK, SELECIONAR LOTE">OK, SELECIONAR LOTE</span>
                 </button>
             </div>
         </div>
@@ -669,7 +669,7 @@
                 <div id="packing-error-icon" style="font-size:70px; line-height:1;">⛔</div>
                 <div id="packing-error-title"
                     style="font-size:38px; font-weight:1000; margin-top:12px; text-transform:uppercase; letter-spacing:1px; line-height:1.08;">
-                    ERRO NO PACKING</div>
+                    <span data-i18n="ERRO NO PACKING">ERRO NO PACKING</span></div>
             </div>
             <div style="padding:30px 24px;">
                 <div id="packing-error-message"
@@ -680,7 +680,7 @@
                 </div>
                 <button onclick="closePackingErrorModal()"
                     style="margin-top:28px; width:100%; padding:26px 20px; font-size:28px; font-weight:1000; background:#ef4444; color:white; border:none; border-radius:18px; cursor:pointer; text-transform:uppercase; letter-spacing:1px;">
-                    OK, CORRIGIR
+                    <span data-i18n="OK, CORRIGIR">OK, CORRIGIR</span>
                 </button>
             </div>
         </div>
@@ -808,6 +808,10 @@
     <div id="main-interface" style="display:none;">
         <div class="nav-bar">
             <div id="menu-items" style="display:flex;"></div>
+            <div style="display:flex; align-items:center; gap:8px; margin-right:10px;">
+                <span id="flag-pt" onclick="setLang('pt')" title="Português" style="font-size:26px; cursor:pointer; transition:opacity 0.2s;">🇵🇹</span>
+                <span id="flag-en" onclick="setLang('en')" title="English" style="font-size:26px; cursor:pointer; opacity:0.35; transition:opacity 0.2s;">🇬🇧</span>
+            </div>
             <button onclick="logout()"
                 style="color:var(--error); border:none; background:none; cursor:pointer; font-weight:900; font-size:14px;">LOGOUT</button>
         </div>
@@ -962,15 +966,15 @@
 
                 <div class="grid-3" style="margin-top:12px;">
                     <div class="card" style="margin:0; padding:14px;">
-                        <div style="font-size:12px; color:#666; font-weight:900;">Lotes por recolher</div>
+                        <div style="font-size:12px; color:#666; font-weight:900;" data-i18n="Lotes por recolher">Lotes por recolher</div>
                         <div id="pick-card-batches" style="font-size:30px; font-weight:1000; margin-top:6px;">0</div>
                     </div>
                     <div class="card" style="margin:0; padding:14px;">
-                        <div style="font-size:12px; color:#666; font-weight:900;">IDs por recolher</div>
+                        <div style="font-size:12px; color:#666; font-weight:900;" data-i18n="IDs por recolher">IDs por recolher</div>
                         <div id="pick-card-ids" style="font-size:30px; font-weight:1000; margin-top:6px;">0</div>
                     </div>
                     <div class="card" style="margin:0; padding:14px;">
-                        <div style="font-size:12px; color:#666; font-weight:900;">Produtos por recolher</div>
+                        <div style="font-size:12px; color:#666; font-weight:900;" data-i18n="Produtos por recolher">Produtos por recolher</div>
                         <div id="pick-card-products" style="font-size:30px; font-weight:1000; margin-top:6px;">0</div>
                     </div>
                 </div>
@@ -1038,27 +1042,27 @@
             </div>
             <div class="card scan-area" style="text-align:center;">
                 <div id="packing-step-guide" class="packing-guide-card">
-                    <div id="packing-step-title" class="packing-guide-title">1. PICAR ID</div>
-                    <div id="packing-step-detail" class="packing-guide-detail">Seleciona um lote e pica primeiro o ID da
+                    <div id="packing-step-title" class="packing-guide-title" data-i18n="1. PICAR ID">1. PICAR ID</div>
+                    <div id="packing-step-detail" class="packing-guide-detail" data-i18n="Seleciona um lote e pica primeiro o ID da encomenda.">Seleciona um lote e pica primeiro o ID da
                         encomenda.</div>
                     <div id="packing-step-progress" class="packing-mini-progress"></div>
                 </div>
-                <input type="text" id="main-input" placeholder="PICAR ID"
+                <input type="text" id="main-input" placeholder="PICAR ID" data-i18n-placeholder="PICAR ID"
                     style="font-size:45px; text-align:center; height:100px; border: 4px solid var(--accent); border-radius:15px;"
                     autocomplete="off">
                 <button id="btn-confirm-order" class="btn-mobile-op btn-op-green" style="display:none;"
                     onclick="confirmOrder('PACKING')">ID COMPLETE</button>
             </div>
             <div class="card">
-                <h3>📦 IDs Picados neste Lote (Concluídos)</h3>
+                <h3 data-i18n="📦 IDs Picados neste Lote (Concluídos)">📦 IDs Picados neste Lote (Concluídos)</h3>
                 <div class="scroll-area">
                     <table id="recent-scans-table">
                         <thead>
                             <tr>
-                                <th>Hora</th>
-                                <th>ID Pedido</th>
-                                <th>Cliente</th>
-                                <th>Ações</th>
+                                <th data-i18n="Hora">Hora</th>
+                                <th data-i18n="ID Pedido">ID Pedido</th>
+                                <th data-i18n="Cliente">Cliente</th>
+                                <th data-i18n="Ações">Ações</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1087,10 +1091,10 @@
                 </div>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-return-complete" class="btn-mobile-op btn-op-orange" style="flex:1; display:none;"
-                        onclick="confirmOrder('RETURN')">✅ RETURN COMPLETO</button>
+                        onclick="confirmOrder('RETURN')"><span data-i18n="✅ RETURN COMPLETO">✅ RETURN COMPLETO</span></button>
                     <button id="btn-return-incomplete" class="btn-mobile-op"
-                        style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('RETURN')">⚠️
-                        RETURN INCOMPLETO</button>
+                        style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('RETURN')"><span data-i18n="⚠️ RETURN INCOMPLETO">⚠️
+                        RETURN INCOMPLETO</span></button>
                 </div>
             </div>
             <div class="card">
@@ -1131,23 +1135,23 @@
                 </div>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
                     <button id="btn-refund-complete" class="btn-mobile-op"
-                        style="flex:1; background:var(--refunds); display:block;" onclick="confirmOrder('REFUND')">✅
-                        REFUND COMPLETO</button>
+                        style="flex:1; background:var(--refunds); display:block;" onclick="confirmOrder('REFUND')"><span data-i18n="✅ REFUND COMPLETO">✅
+                        REFUND COMPLETO</span></button>
                     <button id="btn-refund-incomplete" class="btn-mobile-op"
-                        style="flex:1; background:#f59e0b; display:block;" onclick="confirmOrderIncomplete('REFUND')">⚠️
-                        REFUND INCOMPLETO</button>
+                        style="flex:1; background:#f59e0b; display:block;" onclick="confirmOrderIncomplete('REFUND')"><span data-i18n="⚠️ REFUND INCOMPLETO">⚠️
+                        REFUND INCOMPLETO</span></button>
                     <button id="btn-refund-swipe" class="btn-mobile-op"
                         style="flex:1 1 100%; background:#0ea5e9; display:block;"
                         onclick="confirmRefundSwipe()">SWIPE</button>
                     <button id="btn-refund-no-product" class="btn-mobile-op"
-                        style="flex:1 1 100%; background:#475569; display:block;" onclick="confirmRefundNoProduct()">🚫
-                        SEM PRODUTO</button>
+                        style="flex:1 1 100%; background:#475569; display:block;" onclick="confirmRefundNoProduct()"><span data-i18n="🚫 SEM PRODUTO">🚫
+                        SEM PRODUTO</span></button>
                     <button id="btn-refund-product-damaged" class="btn-mobile-op"
                         style="flex:1 1 100%; background:#7f1d1d; display:block;"
-                        onclick="confirmRefundProductDamaged()">🛠️ PRODUTO DANIFICADO</button>
+                        onclick="confirmRefundProductDamaged()"><span data-i18n="🛠️ PRODUTO DANIFICADO">🛠️ PRODUTO DANIFICADO</span></button>
                     <button id="btn-refund-box-damaged" class="btn-mobile-op"
-                        style="flex:1 1 100%; background:#92400e; display:block;" onclick="confirmRefundBoxDamaged()">📦
-                        CAIXA DANIFICADA</button>
+                        style="flex:1 1 100%; background:#92400e; display:block;" onclick="confirmRefundBoxDamaged()"><span data-i18n="📦 CAIXA DANIFICADA">📦
+                        CAIXA DANIFICADA</span></button>
                 </div>
             </div>
             <div class="card">
@@ -1228,7 +1232,12 @@
     </div>
 
     <script>
-        const firebaseConfig = {
+        // ===== i18n stub (full implementation at bottom) =====
+        window._lang = 'pt';
+        window._t = function(s) { return s; };
+        // ======================================================
+
+                const firebaseConfig = {
             apiKey: "AIzaSyDExvgmtrSILCATQgE8ICJX-SVntb5lM2Y",
             authDomain: "wh-murtede.firebaseapp.com",
             databaseURL: "https://wh-murtede-default-rtdb.europe-west1.firebasedatabase.app",
@@ -1360,7 +1369,7 @@
 
         async function deleteReturnRefundRecord(regKey, mode) {
             if (!regKey) return;
-            if (!confirm('Apagar este registo?')) return;
+            if (!confirm(_t('Apagar este registo?'))) return;
             // Best effort: sync Sheets first, then remove from Firebase.
             // If Sheets is temporarily unavailable, Firebase delete still happens so WH does not block.
             try { await whSheetsSendReturnRefundDelete(regKey, mode); } catch (e) { console.warn(e); }
@@ -1793,23 +1802,23 @@
             const batchId = document.getElementById('wh-batch-select') ? document.getElementById('wh-batch-select').value : '';
             const total = getPackingExpectedIdCount();
             const done = getPackingDoneIdCount();
-            const batchPill = total ? [`Lote: ${done}/${total} IDs completos`] : [];
+            const batchPill = total ? [_t(`Lote: ${done}/${total} IDs completos`)] : [];
 
             if (!batchId || !activeBatchData) {
-                if (inp) inp.placeholder = 'SELECIONAR LOTE';
-                setPackingGuide('warn', 'SELECIONAR LOTE', 'Seleciona primeiro um lote ativo para começar o Packing.', []);
+                if (inp) inp.placeholder = _t('SELECIONAR LOTE');
+                setPackingGuide('warn', _t('SELECIONAR LOTE'), _t('Seleciona primeiro um lote ativo para começar o Packing.'), []);
                 return;
             }
 
             if (!scanData.id) {
-                if (inp) inp.placeholder = 'PICAR ID';
-                setPackingGuide('', '1. PICAR ID', 'Pica o ID da encomenda. Só depois o sistema permite picar produtos.', batchPill);
+                if (inp) inp.placeholder = _t('PICAR ID');
+                setPackingGuide('', _t('1. PICAR ID'), _t('Pica o ID da encomenda. Só depois o sistema permite picar produtos.'), batchPill);
                 return;
             }
 
             if (packingCurrentIdIsCancelled()) {
-                if (inp) inp.placeholder = 'ID CANCELADO - LIMPAR';
-                setPackingGuide('bad', 'ID CANCELADO', 'Este ID está cancelado. Carrega em CLEAR SCAN e pica outro ID.', [`ID: ${scanData.id}`, ...batchPill]);
+                if (inp) inp.placeholder = _t('ID CANCELADO - LIMPAR');
+                setPackingGuide('bad', _t('ID CANCELADO'), _t('Este ID está cancelado. Carrega em CLEAR SCAN e pica outro ID.'), [`ID: ${scanData.id}`, ...batchPill]);
                 return;
             }
 
@@ -1819,25 +1828,25 @@
             const basePills = [`ID: ${scanData.id}`, `Produtos picados: ${(scanData.prods || []).length}`, `Tracking: ${gotTracks}/${requiredVols}`, ...batchPill];
 
             if (chk.extra && chk.extra.length) {
-                if (inp) inp.placeholder = 'REMOVER PRODUTO ERRADO';
-                setPackingGuide('bad', 'PRODUTO EXTRA / DIFERENTE', `Não podes fechar este ID. Remove no botão <b>×</b> o produto que não pertence ao pedido.<br><br><b>Extra/diferente:</b> ${chk.extra.join(', ')}`, basePills);
+                if (inp) inp.placeholder = _t('REMOVER PRODUTO ERRADO');
+                setPackingGuide('bad', _t('PRODUTO EXTRA / DIFERENTE'), _t('Não podes fechar este ID. Remove no botão <b>×</b> o produto que não pertence ao pedido.')+`<br><br><b>${_t('Extra/diferente')}:</b> ${chk.extra.join(', ')}`, basePills);
                 return;
             }
 
             if (chk.missing && chk.missing.length) {
-                if (inp) inp.placeholder = 'PICAR PRODUTOS';
-                setPackingGuide('warn', '2. PICAR PRODUTOS', `Pica os produtos deste ID. Ainda falta:<br><b>${chk.missing.join('<br>')}</b>`, basePills);
+                if (inp) inp.placeholder = _t('PICAR PRODUTOS');
+                setPackingGuide('warn', _t('2. PICAR PRODUTOS'), `${_t('Pica os produtos deste ID. Ainda falta:')}<br><b>${chk.missing.join('<br>')}</b>`, basePills);
                 return;
             }
 
             if (!scanData.track || gotTracks < requiredVols) {
-                if (inp) inp.placeholder = requiredVols > 1 ? `PICAR TRACKING ${gotTracks + 1}/${requiredVols}` : 'PICAR TRACKING';
-                setPackingGuide('ok', '3. PICAR TRACKING', requiredVols > 1 ? `Produtos certos. Agora pica todos os volumes/trackings deste ID. Podem ser iguais ou diferentes. Faltam ${requiredVols - gotTracks}.` : 'Produtos certos. Agora pica o tracking. O ID fecha automaticamente depois do tracking.', basePills);
+                if (inp) inp.placeholder = requiredVols > 1 ? `${_t('PICAR TRACKING')} ${gotTracks + 1}/${requiredVols}` : _t('PICAR TRACKING');
+                setPackingGuide('ok', _t('3. PICAR TRACKING'), requiredVols > 1 ? `${_t('Produtos certos. Agora pica todos os volumes/trackings.')} ${_t('Faltam')} ${requiredVols - gotTracks}.` : _t('Produtos certos. Agora pica o tracking. O ID fecha automaticamente depois do tracking.'), basePills);
                 return;
             }
 
-            if (inp) inp.placeholder = 'A FECHAR ID...';
-            setPackingGuide('done', 'ID A FECHAR AUTOMATICAMENTE', 'Produtos e tracking corretos. O sistema vai concluir este ID automaticamente.', basePills);
+            if (inp) inp.placeholder = _t('A FECHAR ID...');
+            setPackingGuide('done', _t('ID A FECHAR AUTOMATICAMENTE'), _t('Produtos e tracking corretos. O sistema vai concluir este ID automaticamente.'), basePills);
         }
 
         function refreshConfirmBtn() {
@@ -1853,7 +1862,7 @@
                     const gotTracks = getPackingScannedVolumes();
                     if (scanData.id && requiredVols > 1) {
                         volEl.style.display = 'block';
-                        volEl.innerHTML = `<b>Volumes:</b> ${gotTracks}/${requiredVols} leituras de tracking picadas`;
+                        volEl.innerHTML = `<b>${_t('Volumes')}:</b> ${gotTracks}/${requiredVols} ${_t('leituras de tracking picadas')}`;
                         volEl.style.color = gotTracks >= requiredVols ? '#166534' : '#b45309';
                     } else {
                         volEl.style.display = 'none';
@@ -1876,7 +1885,7 @@
 
             if (!activeBatchData || !document.getElementById('wh-batch-select').value) {
                 updatePackingGuidance();
-                alert('Seleciona primeiro um lote ativo.');
+                alert(_t('Seleciona primeiro um lote ativo.'));
                 return;
             }
 
@@ -1886,12 +1895,12 @@
 
             if (isOrderId) {
                 if (scanData.id) {
-                    alert(`Termina primeiro o ID atual (${scanData.id}). Se precisares, carrega em CLEAR SCAN.`);
+                    alert(_t(`Termina primeiro o ID atual (${scanData.id}). Se precisares, carrega em CLEAR SCAN.`));
                     updatePackingGuidance();
                     return;
                 }
                 if (!packingIdBelongsToBatch(v)) {
-                    alert(`ID ${v} não pertence ao lote selecionado. Confirma o lote antes de continuar.`);
+                    alert(_t(`ID ${v} não pertence ao lote selecionado. Confirma o lote antes de continuar.`));
                     updatePackingGuidance();
                     return;
                 }
@@ -3753,7 +3762,7 @@ Faltam produtos do Packing:
             __processedRegRef.on('value', __processedRegCb);
         }
 
-        function removeRecentScan(recId, orderId, itemsStr, bId) { if (!confirm(`Apagar registo do ID ${orderId}?`)) return; db.ref('registos/' + recId).remove().then(() => { if (bId) db.ref(`active_batches/${bId}/processed_ids/${orderId}`).remove(); }); }
+        function removeRecentScan(recId, orderId, itemsStr, bId) { if (!confirm(_t(`Apagar registo do ID ${orderId}?`))) return; db.ref('registos/' + recId).remove().then(() => { if (bId) db.ref(`active_batches/${bId}/processed_ids/${orderId}`).remove(); }); }
 
         function finishBatchPacking() {
             if (!activeBatchData) return;
@@ -3769,11 +3778,11 @@ Faltam produtos do Packing:
                 // show up to 10 missing to avoid huge alerts
                 const sample = missing.slice(0, 10).join(', ');
                 const more = missing.length > 10 ? ` (+${missing.length - 10} more)` : '';
-                return alert(`ERRO: Faltam ${requiredCount - processedRequiredCount} IDs (excluindo cancelados).
+                return alert(`${_t('ERRO: Faltam')} ${requiredCount - processedRequiredCount} ${_t('IDs (excluindo cancelados)')}.
 Missing: ${sample}${more}`);
             }
 
-            if (confirm("Fechar lote permanentemente? (IDs cancelados não bloqueiam)")) {
+            if (confirm(_t("Fechar lote permanentemente? (IDs cancelados não bloqueiam)"))) {
                 db.ref(activeBatchPath).update({ status: 'COMPLETED' }).then(() => {
                     localStorage.removeItem('lastPackingBatch');
                     location.reload();
@@ -3810,7 +3819,7 @@ Missing: ${sample}${more}`);
             if (!bId) return;
 
             if (!currentUser || !currentUser.email) {
-                return alert("ERRO: utilizador não autenticado.");
+                return alert(_t("ERRO: utilizador não autenticado."));
             }
 
             // 🛡️ GUARD: verificar status actual en Firebase antes de escribir
@@ -3818,10 +3827,10 @@ Missing: ${sample}${more}`);
                 const statusSnap = await db.ref('active_batches/' + bId + '/status').once('value');
                 const currentStatus = String(statusSnap.val() || '').trim().toUpperCase();
                 if (currentStatus !== 'PENDING_PICK') {
-                    return alert('ERRO: Este lote já não está em PENDING_PICK (estado atual: ' + currentStatus + ').\nAtualiza a página antes de continuar.');
+                    return alert(_t('ERRO: Este lote já não está em PENDING_PICK (estado atual: ') + currentStatus + _t(').\nAtualiza a página antes de continuar.'));
                 }
             } catch (e) {
-                return alert('Erro ao verificar estado do lote. Verifica a ligação e tenta novamente.');
+                return alert(_t('Erro ao verificar estado do lote. Verifica a ligação e tenta novamente.'));
             }
 
             const pickedBy = currentUser.email.split('@')[0].toUpperCase();
@@ -3867,7 +3876,7 @@ Missing: ${sample}${more}`);
                 .then(() => location.reload())
                 .catch(err => {
                     console.error(err);
-                    alert("Erro ao finalizar picking. Ver consola.");
+                    alert(_t("Erro ao finalizar picking. Ver consola."));
                 });
         }
 
@@ -4054,7 +4063,7 @@ Missing: ${sample}${more}`);
             }
         }
 
-        function deleteBatch(id) { if (confirm("Apagar lote?")) db.ref('active_batches/' + id).remove(); }
+        function deleteBatch(id) { if (confirm(_t("Apagar lote?"))) db.ref('active_batches/' + id).remove(); }
         function closeModal(id) {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -4445,7 +4454,7 @@ Missing: ${sample}${more}`);
             if (prodsEl) {
                 prodsEl.innerHTML = "";
                 list.forEach((name, idx) => {
-                    prodsEl.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="Apagar este produto picado" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
+                    prodsEl.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="×" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
                 });
             }
 
@@ -4468,7 +4477,7 @@ Missing: ${sample}${more}`);
                 if (rvProds) {
                     rvProds.innerHTML = "";
                     list.forEach((name, idx) => {
-                        rvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="Apagar este produto picado" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
+                        rvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="×" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
                     });
                 }
             }
@@ -4483,7 +4492,7 @@ Missing: ${sample}${more}`);
                 if (fvProds) {
                     fvProds.innerHTML = "";
                     list.forEach((name, idx) => {
-                        fvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="Apagar este produto picado" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
+                        fvProds.innerHTML += `<div class="prod-tag"><span>${_fmt(name)}</span><button type="button" title="×" onclick="event.stopPropagation(); removeScannedProductAt(${idx});" style="background:var(--error); color:white; border:none; border-radius:999px; width:24px; height:24px; font-weight:900; cursor:pointer; line-height:20px;">×</button></div>`;
                     });
                 }
             }
@@ -4893,10 +4902,157 @@ Missing: ${sample}${more}`);
             wrapSaving('confirmRefundBoxDamaged', 'A gravar refund caixa danificada...');
             wrapSaving('confirmRefundNoProductDamaged', 'A gravar refund sem produto...');
             wrapSaving('confirmRefundSwipe', 'A gravar refund SWIPE...');
-            wrapSaving('deleteReturnRefundRecord', 'A apagar registo...');
+            wrapSaving('deleteReturnRefundRecord', _t('A apagar registo...'));
         })();
         /* === END SAVING NOTICE / DOUBLE-CLICK GUARD === */
 
+    </script>
+
+
+    <script>
+        // ========== LANGUAGE SYSTEM ==========
+        window._lang = 'pt';
+
+        window._translations = {
+            en: {
+                // Modal texts
+                'ATENÇÃO': 'ATTENTION',
+                'OK, ENTENDIDO': 'OK, UNDERSTOOD',
+                'LOTE COMPLETO': 'BATCH COMPLETE',
+                'SELECIONAR NOVO LOTE': 'SELECT NEW BATCH',
+                'Todos os IDs deste lote foram concluídos. Escolhe outro lote para continuar o Packing.': 'All IDs in this batch are done. Choose another batch to continue Packing.',
+                'OK, SELECIONAR LOTE': 'OK, SELECT BATCH',
+                'ERRO NO PACKING': 'PACKING ERROR',
+                'OK, CORRIGIR': 'OK, FIX IT',
+                // Picking cards
+                'Lotes por recolher': 'Batches to pick',
+                'IDs por recolher': 'IDs to pick',
+                'Produtos por recolher': 'Products to pick',
+                // Packing guide
+                'SELECIONAR LOTE': 'SELECT BATCH',
+                'Seleciona primeiro um lote ativo para começar o Packing.': 'Select an active batch first to start Packing.',
+                '1. PICAR ID': '1. SCAN ID',
+                'Pica o ID da encomenda. Só depois o sistema permite picar produtos.': 'Scan the order ID. Only then the system allows scanning products.',
+                'ID CANCELADO - LIMPAR': 'ID CANCELLED - CLEAR',
+                'ID CANCELADO': 'ID CANCELLED',
+                'Este ID está cancelado. Carrega em CLEAR SCAN e pica outro ID.': 'This ID is cancelled. Press CLEAR SCAN and scan another ID.',
+                'REMOVER PRODUTO ERRADO': 'REMOVE WRONG PRODUCT',
+                'PRODUTO EXTRA / DIFERENTE': 'EXTRA / WRONG PRODUCT',
+                'Não podes fechar este ID. Remove no botão <b>×</b> o produto que não pertence ao pedido.': 'Cannot close this ID. Use the <b>×</b> button to remove the product that does not belong to this order.',
+                'Extra/diferente': 'Extra/different',
+                '2. PICAR PRODUTOS': '2. SCAN PRODUCTS',
+                'Pica os produtos deste ID. Ainda falta:': 'Scan the products for this ID. Still missing:',
+                'PICAR TRACKING': 'SCAN TRACKING',
+                '3. PICAR TRACKING': '3. SCAN TRACKING',
+                'Produtos certos. Agora pica todos os volumes/trackings.': 'Products correct. Now scan all volumes/trackings for this ID. They can be the same or different.',
+                'Faltam': 'Remaining:',
+                'Produtos certos. Agora pica o tracking. O ID fecha automaticamente depois do tracking.': 'Products correct. Now scan the tracking. The ID closes automatically after tracking.',
+                'A FECHAR ID...': 'CLOSING ID...',
+                'ID A FECHAR AUTOMATICAMENTE': 'ID CLOSING AUTOMATICALLY',
+                'Produtos e tracking corretos. O sistema vai concluir este ID automaticamente.': 'Products and tracking correct. The system will complete this ID automatically.',
+                'PICAR ID': 'SCAN ID',
+                'PICAR PRODUTOS': 'SCAN PRODUCTS',
+                // Volumes badge
+                'Volumes': 'Volumes',
+                'leituras de tracking picadas': 'tracking scans done',
+                // Packing table
+                '📦 IDs Picados neste Lote (Concluídos)': '📦 Scanned IDs in this Batch (Completed)',
+                'Hora': 'Time',
+                'ID Pedido': 'Order ID',
+                'Cliente': 'Customer',
+                'Ações': 'Actions',
+                // Return/Refund buttons
+                '✅ RETURN COMPLETO': '✅ RETURN COMPLETE',
+                '⚠️ RETURN INCOMPLETO': '⚠️ RETURN INCOMPLETE',
+                '✅ REFUND COMPLETO': '✅ REFUND COMPLETE',
+                '⚠️ REFUND INCOMPLETO': '⚠️ REFUND INCOMPLETE',
+                '🚫 SEM PRODUTO': '🚫 NO PRODUCT',
+                '🛠️ PRODUTO DANIFICADO': '🛠️ DAMAGED PRODUCT',
+                '📦 CAIXA DANIFICADA': '📦 DAMAGED BOX',
+                // Alerts / Confirms
+                'Seleciona primeiro um lote ativo.': 'Please select an active batch first.',
+                'Apagar este registo?': 'Delete this record?',
+                'Apagar lote?': 'Delete batch?',
+                'Fechar lote permanentemente? (IDs cancelados não bloqueiam)': 'Close batch permanently? (Cancelled IDs do not block)',
+                'ERRO: Faltam': 'ERROR: Missing',
+                'IDs (excluindo cancelados).': 'IDs (excluding cancelled).',
+                'ERRO: Este lote já não está em PENDING_PICK (estado atual: ': 'ERROR: This batch is no longer in PENDING_PICK (current status: ',
+                ').\nAtualiza a página antes de continuar.': ').\nRefresh the page before continuing.',
+                'Erro ao verificar estado do lote. Verifica a ligação e tenta novamente.': 'Error checking batch status. Check your connection and try again.',
+                'ERRO: utilizador não autenticado.': 'ERROR: user not authenticated.',
+                'Erro ao finalizar picking. Ver consola.': 'Error finishing picking. See console.',
+                'A apagar registo...': 'Deleting record...',
+                'A recolher': 'Picking',
+                // Batch complete modal dynamic
+                'Lote:': 'Batch:',
+            }
+        };
+
+        window._t = function(str) {
+            if (!str) return str;
+            if (window._lang === 'en') {
+                // For template literals: try exact match first
+                const s = String(str);
+                const en = window._translations.en[s];
+                if (en !== undefined) return en;
+                // For template literals like "Lote: 2/5 IDs completos", try prefix match
+                if (s.startsWith('Lote: ') && s.includes('IDs completos')) {
+                    return s.replace('IDs completos', 'IDs complete').replace('Lote: ', 'Batch: ');
+                }
+                if (s.startsWith('Termina primeiro o ID atual (')) {
+                    return s.replace('Termina primeiro o ID atual (', 'Finish the current ID first (').replace('). Se precisares, carrega em CLEAR SCAN.', '). If needed, press CLEAR SCAN.');
+                }
+                if (s.includes('não pertence ao lote selecionado')) {
+                    return s.replace('não pertence ao lote selecionado. Confirma o lote antes de continuar.', 'does not belong to the selected batch. Confirm the batch before continuing.');
+                }
+                if (s.startsWith('Apagar registo do ID ')) {
+                    return s.replace('Apagar registo do ID ', 'Delete record for ID ');
+                }
+                return s;
+            }
+            return str;
+        };
+
+        window.setLang = function(lang) {
+            window._lang = lang;
+            // Update flags
+            document.getElementById('flag-pt').style.opacity = lang === 'pt' ? '1' : '0.35';
+            document.getElementById('flag-en').style.opacity = lang === 'en' ? '1' : '0.35';
+
+            const tr = window._translations.en;
+
+            // Update all [data-i18n] elements (innerText)
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (lang === 'en' && tr[key] !== undefined) {
+                    // Preserve innerHTML structure (e.g. <br>) for multi-line elements
+                    if (key === 'SELECIONAR NOVO LOTE') {
+                        el.innerHTML = 'SELECT<br>NEW BATCH';
+                    } else {
+                        el.textContent = tr[key];
+                    }
+                } else {
+                    // Restore PT
+                    if (key === 'SELECIONAR NOVO LOTE') {
+                        el.innerHTML = 'SELECIONAR<br>NOVO LOTE';
+                    } else if (key === '📦 IDs Picados neste Lote (Concluídos)') {
+                        el.textContent = key;
+                    } else {
+                        el.textContent = key;
+                    }
+                }
+            });
+
+            // Update [data-i18n-placeholder] elements
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                el.placeholder = lang === 'en' ? (tr[key] || key) : key;
+            });
+
+            // Update specific element by ID not covered by data-i18n
+            // (these are set dynamically by JS but we translate the current visible state)
+            updatePackingGuidance && updatePackingGuidance();
+        };
     </script>
 
 </body>
