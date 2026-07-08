@@ -1232,9 +1232,11 @@
     </div>
 
     <script>
-        // ===== i18n stub (full implementation at bottom) =====
-        window._lang = 'pt';
-        window._t = function(s) { return s; };
+        // ===== i18n: set language from localStorage before anything runs =====
+        window._lang = (function() {
+            try { return localStorage.getItem('wh_lang') || 'pt'; } catch(e) { return 'pt'; }
+        })();
+        window._t = function(s) { return s; }; // stub - replaced by full _t at bottom
         // ======================================================
 
                 const firebaseConfig = {
@@ -1403,6 +1405,14 @@
         document.addEventListener('click', (e) => {
             const inp = getActiveScanInput();
             if (inp && !['INPUT', 'TEXTAREA', 'SELECT', 'OPTION', 'BUTTON'].includes(e.target.tagName) && !e.target.closest('.modal-content')) { inp.focus(); }
+        });
+
+        // Apply language flags after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                var saved = localStorage.getItem('wh_lang') || 'pt';
+                window._setLangUI && window._setLangUI(saved);
+            } catch(e) {}
         });
 
         window.onload = () => {
@@ -1756,7 +1766,7 @@
                 actionEl.style.color = kind === 'warn' ? '#92400e' : '#991b1b';
             }
             if (modal) modal.style.display = 'flex';
-            else alert((title || 'ERRO NO PACKING') + '\n\n' + (message || '') + '\n\n' + (action || 'Corrigir antes de continuar'));
+            else alert(_t(title || 'ERRO NO PACKING') + '\n\n' + (message || '') + '\n\n' + _t(action || 'Corrigir antes de continuar'));
         }
 
         function closePackingErrorModal() {
@@ -1926,17 +1936,17 @@
 
             if (isProduct) {
                 if (!scanData.id) {
-                    alert('Primeiro tens de picar o ID.');
+                    alert(_t('Primeiro tens de picar o ID.'));
                     updatePackingGuidance();
                     return;
                 }
                 if (packingCurrentIdIsCancelled()) {
-                    alert('Este ID está cancelado. Limpa a picagem e passa ao próximo ID.');
+                    alert(_t('Este ID está cancelado. Limpa a picagem e passa ao próximo ID.'));
                     updatePackingGuidance();
                     return;
                 }
                 if (scanData.track) {
-                    alert('O tracking já foi picado. Aguarda a conclusão automática ou limpa a picagem.');
+                    alert(_t('O tracking já foi picado. Aguarda a conclusão automática ou limpa a picagem.'));
                     updatePackingGuidance();
                     return;
                 }
@@ -1955,12 +1965,12 @@
             // Not an ID and not a product in master data: in PACKING this is treated as tracking,
             // but only after the expected products are exactly correct.
             if (!scanData.id) {
-                alert('Primeiro tens de picar o ID.');
+                alert(_t('Primeiro tens de picar o ID.'));
                 updatePackingGuidance();
                 return;
             }
             if (packingCurrentIdIsCancelled()) {
-                alert('Este ID está cancelado. Limpa a picagem e passa ao próximo ID.');
+                alert(_t('Este ID está cancelado. Limpa a picagem e passa ao próximo ID.'));
                 updatePackingGuidance();
                 return;
             }
@@ -1978,7 +1988,7 @@
             if (!scanData.tracks) scanData.tracks = [];
             const requiredVols = getPackingRequiredVolumes();
             if (scanData.tracks.length >= requiredVols) {
-                alert(`Este ID só precisa de ${requiredVols} volume(s) / tracking(s). Não piques tracking extra.`);
+                alert(`${_t('Este ID só precisa de')} ${requiredVols} ${_t('volume(s) / tracking(s). Não piques tracking extra.')}`);
                 updatePackingGuidance();
                 return;
             }
@@ -2283,7 +2293,7 @@ Faltam produtos do Packing:
             const st = (status || '').toString().toUpperCase();
 
             if (!scanData.id || !scanData.track) {
-                return { ok: false, message: 'Faltam dados (ID e tracking)!' };
+                return { ok: false, message: _t('Faltam dados (ID e tracking)!') };
             }
 
             // Returns/Refunds must never be closed without a product scanned in the CURRENT session.
@@ -2645,7 +2655,7 @@ Faltam produtos do Packing:
 
             // Special refund buttons can close with products missing and without tracking.
             // The only mandatory field is the ID, because the record must belong to an order.
-            if (!scanData.id) return alert('Falta o ID da encomenda. Pica o ID antes de fechar este refund especial.');
+            if (!scanData.id) return alert(_t('Falta o ID da encomenda. Pica o ID antes de fechar este refund especial.'));
 
             const specialHasProducts = hasCurrentReturnRefundProducts();
             const specialProducts = specialHasProducts ? scanData.prods.join(' | ') : label;
@@ -2709,7 +2719,7 @@ Faltam produtos do Packing:
                 // Do not send them to Google Sheets RETURNS_REFUNDS.
                 resetScan();
             } catch (e) {
-                alert('Erro ao gravar refund.');
+                alert(_t('Erro ao gravar refund.'));
             }
         }
 
@@ -2745,7 +2755,7 @@ Faltam produtos do Packing:
                 const validation = await validateReturnRefundBeforeClose(m, 'INCOMPLETE');
                 if (!validation.ok) return alert(validation.message);
             } else if (!scanData.id || !scanData.track) {
-                return alert("Faltam dados (ID e tracking)!");
+                return alert(_t("Faltam dados (ID e tracking)!"));
             }
             const workDc = _nowDateClean();
             const endTime = _nowTime();
@@ -2781,7 +2791,7 @@ Faltam produtos do Packing:
                 await whSheetsSendReturnRefundRecord(regRef.key, returnRefundRecord);
                 resetScan();
             } catch (e) {
-                alert('Erro ao gravar.');
+                alert(_t('Erro ao gravar.'));
             }
         }
         // ============================================================
@@ -2796,7 +2806,7 @@ Faltam produtos do Packing:
             if (modal) {
                 modal.style.display = 'flex';
             } else {
-                alert(`LOTE COMPLETO AUTOMATICAMENTE: ${batchName || ''}\n\nSELECIONAR NOVO LOTE`);
+                alert(`${_t('LOTE COMPLETO AUTOMATICAMENTE')}: ${batchName || ''}\n\n${_t('SELECIONAR NOVO LOTE')}`);
             }
         }
 
@@ -2906,7 +2916,7 @@ Faltam produtos do Packing:
         async function confirmOrder(mode, opts) {
             const m = mode || currentMode;
             const bId = document.getElementById('wh-batch-select').value;
-            if (!scanData.id || !scanData.track) return alert("Faltam dados!");
+            if (!scanData.id || !scanData.track) return alert(_t("Faltam dados!"));
 
             // ✅ RETURN/REFUND: product required; if PACKING exists, block wrong/extra products.
             if (_isReturnMode(m) || _isRefundMode(m)) {
@@ -3009,7 +3019,7 @@ Faltam produtos do Packing:
                 resetScan();
                 if (__packingBatchAutoCompleted) updatePackingGuidance();
             } catch (e) {
-                alert('Erro ao gravar.');
+                alert(_t('Erro ao gravar.'));
             }
         }
 
@@ -3423,7 +3433,7 @@ Faltam produtos do Packing:
 
             if (searchAll) {
                 // FULL SCAN (slow)
-                if (!confirm("SEARCH ALL RECORDS pode demorar. Continuar?")) {
+                if (!confirm(_t("SEARCH ALL RECORDS pode demorar. Continuar?"))) {
                     if (container) container.innerHTML = "<div class='card' style='grid-column: 1 / -1;'><b>Search cancelled.</b></div>";
                     return;
                 }
@@ -4264,7 +4274,7 @@ Missing: ${sample}${more}`);
                 resetScan && resetScan();
             }).catch(err => {
                 console.error(err);
-                alert("Erro ao gravar pre-packing.");
+                alert(_t("Erro ao gravar pre-packing."));
             });
         }
 
@@ -4538,10 +4548,10 @@ Missing: ${sample}${more}`);
                 // Log action in batch history
                 logBatchAction(batchId, `CANCELLED ID: ${orderId} | Reason: ${payload.reason}`);
 
-                alert(`ID ${orderId} cancelado com sucesso.`);
+                alert(`${_t('ID')} ${orderId} ${_t('cancelado com sucesso.')}`);
             } catch (e) {
                 console.error(e);
-                alert("Erro ao cancelar o ID.");
+                alert(_t("Erro ao cancelar o ID."));
             }
         }
 
@@ -4598,7 +4608,7 @@ Missing: ${sample}${more}`);
                     var orig = window.tab;
                     window.tab = function (secId, el) {
                         if (!isAllowed(secId)) {
-                            alert("Sem acesso a esse separador.");
+                            alert(_t("Sem acesso a esse separador."));
                             return;
                         }
                         return orig(secId, el);
@@ -4611,7 +4621,7 @@ Missing: ${sample}${more}`);
                         var orig2 = window[fn];
                         window[fn] = function (secId) {
                             if (!isAllowed(secId)) {
-                                alert("Sem acesso a esse separador.");
+                                alert(_t("Sem acesso a esse separador."));
                                 return;
                             }
                             return orig2.apply(this, arguments);
@@ -4866,7 +4876,7 @@ Missing: ${sample}${more}`);
 
             function showAlreadySaving() {
                 if (typeof uiAlert === 'function') uiAlert('Já está a gravar. Aguarda uns segundos antes de carregar novamente.', { type: 'info', duration: 3000 });
-                else alert('Já está a gravar. Aguarda uns segundos antes de carregar novamente.');
+                else alert(_t('Já está a gravar. Aguarda uns segundos antes de carregar novamente.'));
             }
 
             function wrapSaving(name, labelFn) {
@@ -4910,8 +4920,8 @@ Missing: ${sample}${more}`);
 
 
     <script>
-        // ========== LANGUAGE SYSTEM ==========
-        window._lang = 'pt';
+        // ========== LANGUAGE SYSTEM (full implementation) ==========
+        // _lang already set from localStorage at top of script
 
         window._translations = {
             en: {
@@ -4984,6 +4994,27 @@ Missing: ${sample}${more}`);
                 'A apagar registo...': 'Deleting record...',
                 'A recolher': 'Picking',
                 '\u2139\uFE0F Pica o ID. COMPLETO/INCOMPLETO precisam de ID + tracking + produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.': '\u2139\uFE0F Scan the ID. COMPLETE/INCOMPLETE require ID + tracking + product. SWIPE / NO PRODUCT / DAMAGED PRODUCT / DAMAGED BOX can close with ID only.',
+                // Additional alerts
+                'Faltam dados!': 'Missing data!',
+                'Faltam dados (ID e tracking)!': 'Missing data (ID and tracking)!',
+                'Falta o ID da encomenda. Pica o ID antes de fechar este refund especial.': 'Order ID is missing. Scan the ID before closing this special refund.',
+                'Primeiro tens de picar o ID.': 'You need to scan the ID first.',
+                'Este ID está cancelado. Limpa a picagem e passa ao próximo ID.': 'This ID is cancelled. Clear the scan and move to the next ID.',
+                'O tracking já foi picado. Aguarda a conclusão automática ou limpa a picagem.': 'Tracking already scanned. Wait for auto-completion or clear the scan.',
+                'Corrigir antes de continuar': 'Fix before continuing',
+                'Erro ao gravar refund.': 'Error saving refund.',
+                'Erro ao gravar.': 'Error saving.',
+                'LOTE COMPLETO AUTOMATICAMENTE': 'BATCH COMPLETE AUTOMATICALLY',
+                'SEARCH ALL RECORDS pode demorar. Continuar?': 'SEARCH ALL RECORDS may take a while. Continue?',
+                'Erro ao gravar pre-packing.': 'Error saving pre-packing.',
+                'Já está a gravar. Aguarda uns segundos antes de carregar novamente.': 'Already saving. Wait a few seconds before trying again.',
+                'Sem acesso a esse separador.': 'No access to this tab.',
+                'Erro ao cancelar o ID.': 'Error cancelling the ID.',
+                'ID cancelado com sucesso.': 'ID successfully cancelled.',
+                'ID': 'ID',
+                'cancelado com sucesso.': 'successfully cancelled.',
+                'Este ID só precisa de': 'This ID only needs',
+                'volume(s) / tracking(s). Não piques tracking extra.': 'volume(s) / tracking(s). Do not scan extra trackings.',
                 // Batch complete modal dynamic
                 'Lote:': 'Batch:',
             }
@@ -5015,10 +5046,27 @@ Missing: ${sample}${more}`);
         };
 
         window.setLang = function(lang) {
-            window._lang = lang;
-            // Update flags
-            document.getElementById('flag-pt').style.opacity = lang === 'pt' ? '1' : '0.35';
-            document.getElementById('flag-en').style.opacity = lang === 'en' ? '1' : '0.35';
+            // Save preference and reload so ALL dynamic JS text reloads in the right language
+            try { localStorage.setItem('wh_lang', lang); } catch(e) {}
+            location.reload();
+        };
+
+        // Apply saved language on page load (before DOMContentLoaded so _t is ready)
+        (function() {
+            try {
+                var saved = localStorage.getItem('wh_lang');
+                if (saved && saved !== 'pt') {
+                    window._lang = saved;
+                }
+            } catch(e) {}
+        })();
+
+        window._setLangUI = function(lang) {
+            // Update flags visual state only (called after reload)
+            var pt = document.getElementById('flag-pt');
+            var en = document.getElementById('flag-en');
+            if (pt) pt.style.opacity = lang === 'pt' ? '1' : '0.35';
+            if (en) en.style.opacity = lang === 'en' ? '1' : '0.35';
 
             const tr = window._translations.en;
 
