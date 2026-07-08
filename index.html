@@ -1407,11 +1407,17 @@
             if (inp && !['INPUT', 'TEXTAREA', 'SELECT', 'OPTION', 'BUTTON'].includes(e.target.tagName) && !e.target.closest('.modal-content')) { inp.focus(); }
         });
 
-        // Apply language flags after DOM is ready
+        // Apply language flags + translations after DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 var saved = localStorage.getItem('wh_lang') || 'pt';
-                window._setLangUI && window._setLangUI(saved);
+                if (saved !== 'pt') window.setLang && window.setLang(saved);
+                else {
+                    var pt = document.getElementById('flag-pt');
+                    var en = document.getElementById('flag-en');
+                    if (pt) pt.style.opacity = '1';
+                    if (en) en.style.opacity = '0.35';
+                }
             } catch(e) {}
         });
 
@@ -5046,23 +5052,10 @@ Missing: ${sample}${more}`);
         };
 
         window.setLang = function(lang) {
-            // Save preference and reload so ALL dynamic JS text reloads in the right language
+            window._lang = lang;
             try { localStorage.setItem('wh_lang', lang); } catch(e) {}
-            location.reload();
-        };
 
-        // Apply saved language on page load (before DOMContentLoaded so _t is ready)
-        (function() {
-            try {
-                var saved = localStorage.getItem('wh_lang');
-                if (saved && saved !== 'pt') {
-                    window._lang = saved;
-                }
-            } catch(e) {}
-        })();
-
-        window._setLangUI = function(lang) {
-            // Update flags visual state only (called after reload)
+            // Update flag visuals
             var pt = document.getElementById('flag-pt');
             var en = document.getElementById('flag-en');
             if (pt) pt.style.opacity = lang === 'pt' ? '1' : '0.35';
@@ -5070,37 +5063,40 @@ Missing: ${sample}${more}`);
 
             const tr = window._translations.en;
 
-            // Update all [data-i18n] elements (innerText)
+            // Update all [data-i18n] elements
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (lang === 'en' && tr[key] !== undefined) {
-                    // Preserve innerHTML structure (e.g. <br>) for multi-line elements
                     if (key === 'SELECIONAR NOVO LOTE') {
                         el.innerHTML = 'SELECT<br>NEW BATCH';
                     } else {
                         el.textContent = tr[key];
                     }
                 } else {
-                    // Restore PT
                     if (key === 'SELECIONAR NOVO LOTE') {
                         el.innerHTML = 'SELECIONAR<br>NOVO LOTE';
-                    } else if (key === '📦 IDs Picados neste Lote (Concluídos)') {
-                        el.textContent = key;
                     } else {
                         el.textContent = key;
                     }
                 }
             });
 
-            // Update [data-i18n-placeholder] elements
+            // Update placeholders
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
                 el.placeholder = lang === 'en' ? (tr[key] || key) : key;
             });
 
-            // Update specific element by ID not covered by data-i18n
-            // (these are set dynamically by JS but we translate the current visible state)
-            updatePackingGuidance && updatePackingGuidance();
+            // Re-run packing guidance to update dynamic text
+            try { updatePackingGuidance && updatePackingGuidance(); } catch(e) {}
+
+            // Re-translate visible status banners in returns/refunds
+            ['rv-pack-status', 'fv-pack-status'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el && el.style.display !== 'none' && el._i18nKey) {
+                    el.innerHTML = _t(el._i18nKey);
+                }
+            });
         };
     </script>
 
