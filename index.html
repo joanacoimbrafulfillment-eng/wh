@@ -1524,7 +1524,8 @@
         function setupUI(email) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-interface').style.display = 'block';
-            const isAdmin = email.endsWith('@admin.com');
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            const isAdmin = normalizedEmail.endsWith('@admin.com');
             isAdminUser = isAdmin;
             const m = document.getElementById('menu-items');
 
