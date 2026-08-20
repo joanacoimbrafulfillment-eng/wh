@@ -1214,7 +1214,7 @@
                             <h3 style="margin:0 0 4px 0;">Trackings diferentes</h3>
                             <div style="color:#64748b; font-weight:600;">O Return é aceite, mas fica sinalizado quando o tracking não coincide com o PACKING.</div>
                         </div>
-                        <button type="button" onclick="dismissTodayTrackingAlerts('RETURN')" style="background:#b91c1c;">LIMPAR ALERTAS DE HOJE</button>
+                        <button id="dismiss-today-return-alerts-btn" type="button" onclick="dismissTodayTrackingAlerts('RETURN')" style="background:#b91c1c;">LIMPAR ALERTAS DE HOJE</button>
                     </div>
                     <div id="return-tracking-alert-summary" style="margin:12px 0; font-weight:800; color:#9a3412;"></div>
                     <div class="scroll-area">
@@ -1546,7 +1546,11 @@
              <div class="nav-item" onclick="tab('sec-prepack', this)">PRE-PACKING</div>
              <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
              <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>
-             <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>`;
+             <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>
+             <div class="nav-item" onclick="tab('sec-alerts', this)">ALERTAS</div>`;
+
+            const dismissTodayBtn = document.getElementById('dismiss-today-return-alerts-btn');
+            if (dismissTodayBtn) dismissTodayBtn.style.display = isAdmin ? '' : 'none';
 
             syncGlobalData();
             if (isAdmin) tab('sec-overview', document.querySelector('[onclick*="sec-overview"]'));
@@ -1556,7 +1560,7 @@
         function tab(id, el) {
             // --- ACCESS GUARD (WH users only see Picking, Pre-Packing, Returns, Packing) ---
             if (!isAdminUser) {
-                const allowed = ['sec-picking', 'sec-prepack', 'sec-returns', 'sec-refunds', 'sec-warehouse'];
+                const allowed = ['sec-picking', 'sec-prepack', 'sec-returns', 'sec-refunds', 'sec-warehouse', 'sec-alerts'];
                 if (!allowed.includes(id)) {
                     id = 'sec-picking';
                     el = document.querySelector('[onclick*="sec-picking"]');
@@ -3038,7 +3042,6 @@ Faltam produtos do Packing:
         }
 
         async function loadReturnAlerts() {
-            if (!isAdminUser) return;
             const tbody = document.querySelector('#return-alerts-table tbody');
             const summary = document.getElementById('return-alert-summary');
             if (!tbody) return;
@@ -3066,7 +3069,7 @@ Faltam produtos do Packing:
                     const open = (a.status || '').toUpperCase() === 'OPEN';
                     const state = open ? '🚨 ABERTO' : ((a.status || '') === 'RESOLVED_MANUAL' ? '✅ FECHADO ADMIN' : '✅ RESOLVIDO');
                     const resolution = open ? '-' : (_fmt(a.resolutionReason) + (a.resolvedBy ? '<br><small>' + _fmt(a.resolvedBy) + ' · ' + _fmt(a.resolvedAt) + '</small>' : ''));
-                    const action = open ? `<button type="button" onclick="openReturnAlertResolveModal('${_fmt(a.id).replace(/'/g, "\\'")}')" style="background:#16a34a; padding:8px 12px;">COMPLETAR ID</button>` : '-';
+                    const action = open && isAdminUser ? `<button type="button" onclick="openReturnAlertResolveModal('${_fmt(a.id).replace(/'/g, "\\'")}')" style="background:#16a34a; padding:8px 12px;">COMPLETAR ID</button>` : '-';
                     return `<tr>
                         <td><b>${_fmt(a.id)}</b></td>
                         <td>${_fmt(a.tracks || a.track || '-')}</td>
@@ -3098,7 +3101,6 @@ Faltam produtos do Packing:
         }
 
         async function loadActiveAlertTab() {
-            if (!isAdminUser) return;
             if (__alertsSubtab === 'RETURN') {
                 await loadReturnAlerts();
                 await loadTrackingAlerts('RETURN');
@@ -3178,7 +3180,6 @@ Faltam produtos do Packing:
         }
 
         async function loadTrackingAlerts(mode) {
-            if (!isAdminUser) return;
             const m = (mode || 'RETURN').toUpperCase();
             const tableId = m === 'RETURN' ? 'return-tracking-alerts-table' : 'refund-tracking-alerts-table';
             const summaryId = m === 'RETURN' ? 'return-tracking-alert-summary' : 'refund-tracking-alert-summary';
@@ -3205,7 +3206,7 @@ Faltam produtos do Packing:
                         '<td style="color:#b91c1c; font-weight:800;">' + _fmt(a.scannedTracks || '-') + '</td>' +
                         '<td>' + _fmt(a.createdAt || '-') + '</td>' +
                         '<td>' + _fmt(a.createdBy || '-') + '</td>' +
-                        '<td><button type="button" onclick="dismissTrackingAlert(\'' + x.key.replace(/'/g, "\\'") + '\')" style="background:#b91c1c; padding:8px 12px;">ELIMINAR ALERTA</button></td>' +
+                        '<td>' + (isAdminUser ? '<button type="button" onclick="dismissTrackingAlert(\'' + x.key.replace(/'/g, "\\'") + '\')" style="background:#b91c1c; padding:8px 12px;">ELIMINAR ALERTA</button>' : '-') + '</td>' +
                     '</tr>';
                 }).join('');
             } catch (e) {
