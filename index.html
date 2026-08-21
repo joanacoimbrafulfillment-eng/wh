@@ -6,11 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WH-MURTEDE LOGISTICS - V95 TOTAL CONTROL</title>
 
-    <!-- SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- EXCEL EXPORT LIBRARY -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <style>
@@ -1138,8 +1136,7 @@
                         style="flex:1; background:var(--refunds); display:block;" onclick="confirmOrder('REFUND')"><span data-i18n="✅ REFUND COMPLETO">✅
                         REFUND COMPLETO</span></button>
                     <button id="btn-refund-incomplete" class="btn-mobile-op"
-                        style="flex:1; background:#f59e0b; display:none;" onclick="confirmOrderIncomplete('REFUND')"><span data-i18n="⚠️ REFUND INCOMPLETO">⚠️
-                        REFUND INCOMPLETO</span></button>
+                        style="flex:1; background:#f59e0b; display:none;" onclick="confirmRefundOkIncomplete()"><span>✅ REFUND OK, BUT INCOMPLETE</span></button>
                     <button id="btn-refund-swipe" class="btn-mobile-op"
                         style="flex:1 1 100%; background:#0ea5e9; display:block;"
                         onclick="confirmRefundSwipe()">SWIPE</button>
@@ -1178,10 +1175,10 @@
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;">
                     <div>
-                        <h2 style="margin-bottom:4px;">🚨 ALERTAS</h2>
-                        <div style="color:#64748b; font-weight:600;">Incidências registadas sem bloquear o trabalho do operador.</div>
+                        <h2 style="margin-bottom:4px;" data-i18n="🚨 ALERTAS">🚨 ALERTAS</h2>
+                        <div style="color:#64748b; font-weight:600;" data-i18n="Incidências registadas sem bloquear o trabalho do operador.">Incidências registadas sem bloquear o trabalho do operador.</div>
                     </div>
-                    <button type="button" onclick="loadActiveAlertTab()" style="padding:10px 16px;">ATUALIZAR</button>
+                    <button type="button" onclick="loadActiveAlertTab()" style="padding:10px 16px;" data-i18n="ATUALIZAR">ATUALIZAR</button>
                 </div>
 
                 <div style="display:flex; gap:10px; margin:18px 0; flex-wrap:wrap;">
@@ -1192,43 +1189,32 @@
                 <div id="alerts-return-panel">
                     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
                         <div>
-                            <h3 style="margin:0 0 4px 0;">Returns incompletos</h3>
-                            <div style="color:#64748b; font-weight:600;">IDs que ainda não reconciliaram 100% do PACKING.</div>
+                            <h3 style="margin:0 0 4px 0;" data-i18n="Returns incompletos">Returns incompletos</h3>
+                            <div style="color:#64748b; font-weight:600;" data-i18n="IDs que ainda não reconciliaram 100% do PACKING.">IDs que ainda não reconciliaram 100% do PACKING.</div>
                         </div>
                         <select id="return-alert-filter" onchange="loadReturnAlerts()" style="padding:10px 14px; border:1px solid #cbd5e1; border-radius:10px; font-weight:700;">
-                            <option value="OPEN">ABERTOS</option>
-                            <option value="ALL">TODOS</option>
-                            <option value="RESOLVED">RESOLVIDOS</option>
+                            <option value="OPEN" data-i18n="ABERTOS">ABERTOS</option>
+                            <option value="ALL" data-i18n="TODOS">TODOS</option>
+                            <option value="RESOLVED" data-i18n="RESOLVIDOS">RESOLVIDOS</option>
                         </select>
                     </div>
                     <div id="return-alert-summary" style="margin:12px 0; font-weight:800; color:#9a3412;"></div>
                     <div class="scroll-area">
                         <table id="return-alerts-table">
-                            <thead><tr><th>ID</th><th>Tracking</th><th>Falta</th><th>Recebido</th><th>Aberto em</th><th>Estado</th><th>Resolução</th><th>Ação</th></tr></thead>
+                            <thead><tr><th>ID</th><th>Tracking</th><th data-i18n="Falta">Falta</th><th data-i18n="Recebido">Recebido</th><th data-i18n="Aberto em">Aberto em</th><th data-i18n="Estado">Estado</th><th data-i18n="Resolução">Resolução</th><th data-i18n="Ação">Ação</th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
 
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin:24px 0 10px;">
-                        <div>
-                            <h3 style="margin:0 0 4px 0;">Trackings diferentes</h3>
-                            <div style="color:#64748b; font-weight:600;">O Return é aceite, mas fica sinalizado quando o tracking não coincide com o PACKING.</div>
-                        </div>
-                        <button id="dismiss-today-return-alerts-btn" type="button" onclick="dismissTodayTrackingAlerts('RETURN')" style="background:#b91c1c;">LIMPAR ALERTAS DE HOJE</button>
-                    </div>
-                    <div id="return-tracking-alert-summary" style="margin:12px 0; font-weight:800; color:#9a3412;"></div>
-                    <div class="scroll-area">
-                        <table id="return-tracking-alerts-table">
-                            <thead><tr><th>ID</th><th>Tracking PACKING</th><th>Tracking recebido</th><th>Data</th><th>Utilizador</th><th>Ação</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+                    <div style="margin-top:24px; background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:14px; border-radius:12px; font-weight:700;">
+                        <span data-i18n="Tracking em RETURN: se o tracking do PACKING começar por DD, o sistema exige o mesmo tracking. Nos restantes casos, o tracking recebido pode ser diferente e não gera alerta.">Tracking em RETURN: se o tracking do PACKING começar por DD, o sistema exige o mesmo tracking. Nos restantes casos, o tracking recebido pode ser diferente e não gera alerta.</span>
                     </div>
                 </div>
 
                 <div id="alerts-refund-panel" style="display:none;">
-                    <h3 style="margin:0 0 6px 0;">Refunds</h3>
+                    <h3 style="margin:0 0 6px 0;" data-i18n="Refunds">Refunds</h3>
                     <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:14px; border-radius:12px; font-weight:700;">
-                        O tracking do REFUND pode ser diferente por definição, por isso não gera alerta. Os produtos continuam a ser validados contra o PACKING do ID e podem representar apenas uma devolução parcial do cliente.
+                        <span data-i18n="O tracking do REFUND pode ser diferente por definição, por isso não gera alerta. Os produtos continuam a ser validados contra o PACKING do ID e podem representar apenas uma devolução parcial do cliente.">O tracking do REFUND pode ser diferente por definição, por isso não gera alerta. Os produtos continuam a ser validados contra o PACKING do ID e podem representar apenas uma devolução parcial do cliente.</span>
                     </div>
                 </div>
             </div>
@@ -1236,14 +1222,14 @@
 
         <div id="return-alert-resolve-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:9700; align-items:center; justify-content:center; padding:18px;">
             <div style="background:white; width:100%; max-width:620px; border-radius:20px; padding:24px; box-shadow:0 24px 80px rgba(0,0,0,.45);">
-                <h2 style="margin-top:0;">✅ Completar ID administrativamente</h2>
+                <h2 style="margin-top:0;" data-i18n="✅ Completar ID administrativamente">✅ Completar ID administrativamente</h2>
                 <div style="font-size:20px; margin-bottom:12px;">ID: <b id="return-alert-resolve-id">-</b></div>
                 <div id="return-alert-resolve-missing" style="background:#fff7ed; border:1px solid #fed7aa; padding:12px; border-radius:10px; margin-bottom:14px;"></div>
-                <label for="return-alert-resolve-reason" style="display:block; font-weight:800; margin-bottom:6px;">Justificação obrigatória</label>
-                <textarea id="return-alert-resolve-reason" rows="5" placeholder="Ex.: Produto perdido pela transportadora; reclamação aceite e valor reembolsado." style="width:100%; box-sizing:border-box; padding:12px; border:1px solid #cbd5e1; border-radius:10px; font-size:16px;"></textarea>
+                <label for="return-alert-resolve-reason" style="display:block; font-weight:800; margin-bottom:6px;" data-i18n="Justificação obrigatória">Justificação obrigatória</label>
+                <textarea id="return-alert-resolve-reason" rows="5" placeholder="Ex.: Produto perdido pela transportadora; reclamação aceite e valor reembolsado." data-i18n-placeholder="Ex.: Produto perdido pela transportadora; reclamação aceite e valor reembolsado." style="width:100%; box-sizing:border-box; padding:12px; border:1px solid #cbd5e1; border-radius:10px; font-size:16px;"></textarea>
                 <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
-                    <button type="button" onclick="closeReturnAlertResolveModal()" style="flex:1; background:#64748b;">CANCELAR</button>
-                    <button type="button" onclick="confirmManualReturnAlertResolution()" style="flex:1; background:#16a34a;">COMPLETAR ID</button>
+                    <button type="button" onclick="closeReturnAlertResolveModal()" style="flex:1; background:#64748b;" data-i18n="CANCELAR">CANCELAR</button>
+                    <button type="button" onclick="confirmManualReturnAlertResolution()" style="flex:1; background:#16a34a;" data-i18n="COMPLETAR ID">COMPLETAR ID</button>
                 </div>
             </div>
         </div>
@@ -1541,13 +1527,13 @@
              <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>
              <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
              <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>
-             <div class="nav-item" onclick="tab('sec-alerts', this)">ALERTAS</div>` :
+             <div class="nav-item" onclick="tab('sec-alerts', this)" data-i18n="ALERTAS">ALERTAS</div>` :
                 `<div class="nav-item" onclick="tab('sec-picking', this)">PICKING</div>
              <div class="nav-item" onclick="tab('sec-prepack', this)">PRE-PACKING</div>
              <div class="nav-item" onclick="tab('sec-returns', this)">RETURNS</div>
              <div class="nav-item" onclick="tab('sec-refunds', this)">REFUNDS</div>
              <div class="nav-item" onclick="tab('sec-warehouse', this)">PACKING</div>
-             <div class="nav-item" onclick="tab('sec-alerts', this)">ALERTAS</div>`;
+             <div class="nav-item" onclick="tab('sec-alerts', this)" data-i18n="ALERTAS">ALERTAS</div>`;
 
             const dismissTodayBtn = document.getElementById('dismiss-today-return-alerts-btn');
             if (dismissTodayBtn) dismissTodayBtn.style.display = isAdmin ? '' : 'none';
@@ -2136,6 +2122,28 @@
             refreshConfirmBtn();
         }
 
+        async function findExistingCompleteReturn(orderId) {
+            if (!orderId) return null;
+            try {
+                const snap = await db.ref('registos').orderByChild('id').equalTo(orderId).once('value');
+                const recs = snap.val() || {};
+                let found = null;
+                Object.entries(recs).forEach(function(entry) {
+                    const key = entry[0], r = entry[1];
+                    if (!r || !_isReturnMode(r.mode)) return;
+                    const st = String(r.returnStatus || 'COMPLETE').toUpperCase();
+                    if (st !== 'COMPLETE') return;
+                    if (!found || (r.ts || r.endTs || 0) > (found.record.ts || found.record.endTs || 0)) {
+                        found = { key: key, record: r };
+                    }
+                });
+                return found;
+            } catch (e) {
+                console.warn('findExistingCompleteReturn error', e);
+                return null;
+            }
+        }
+
         async function handleReturnRefundScan(rawValue, mode) {
             const m = mode || currentMode;
             const v = String(rawValue || '').trim();
@@ -2168,6 +2176,22 @@
                     refreshConfirmBtn();
                     alert(_t('ID sem PACKING. Não é possível continuar com este Return/Refund.') + '\n\nID: ' + rejectedId);
                     return;
+                }
+
+                if (_isReturnMode(m)) {
+                    const existingComplete = await findExistingCompleteReturn(v);
+                    if (existingComplete) {
+                        const rejectedId = scanData.id;
+                        scanData.id = '';
+                        scanData.startTime = '';
+                        scanData.startTs = null;
+                        scanData._idPackingVerified = false;
+                        scanData._packingCheck = null;
+                        updateDisplay(m);
+                        refreshConfirmBtn();
+                        alert(_t('Este ID já tem um RETURN COMPLETO registado. Novo Return bloqueado.') + '\n\nID: ' + rejectedId);
+                        return;
+                    }
                 }
 
                 await refreshPreviousIncompleteProducts(m);
@@ -2222,12 +2246,9 @@
                         alert(_t('O PACKING deste ID não tem tracking registado. Operação bloqueada.'));
                         return;
                     }
-                    if (!trackCheck.match) {
-                        scanData._returnTrackingMismatch = {
-                            packedTracks: trackCheck.packedTracks.slice(),
-                            scannedTracks: [...new Set([...(scanData.tracks || []), v])]
-                        };
-                        alert(_t('ATENÇÃO: tracking diferente do PACKING. O Return será aceite, mas ficará registado nos ALERTAS.'));
+                    if (trackCheck.isCttDd && !trackCheck.match) {
+                        alert(_t('Tracking CTT incorreto. Para PACKING com tracking DD, tens de picar exatamente o mesmo tracking do PACKING.') + '\n\nPACKING: ' + trackCheck.packedTracks.join(' | '));
+                        return;
                     }
                 }
                 if (!scanData.tracks) scanData.tracks = [];
@@ -2242,6 +2263,7 @@
                 checkAndShowPartialBanner(m);
                 maybeShowReturnRefundPartialBlock(m);
             }
+            if (_isReturnMode(m)) await maybeAutoCompleteReturn(m);
         }
         // ===== RETURN/REFUND vs PACKING COMPARISON =====
         // Products that are EXCLUDED from return/refund comparison (warranties, etc.)
@@ -2325,11 +2347,14 @@
                 const scanned = (Array.isArray(scannedTracks) ? scannedTracks : [scannedTracks])
                     .map(x => String(x || '').trim())
                     .filter(Boolean);
-                const invalidTracks = scanned.filter(x => !packedTracks.includes(x));
+                const packedUpper = packedTracks.map(x => x.toUpperCase());
+                const isCttDd = packedUpper.some(x => x.startsWith('DD'));
+                const invalidTracks = scanned.filter(x => !packedUpper.includes(x.toUpperCase()));
 
                 return {
                     found: true,
                     match: packedTracks.length > 0 && invalidTracks.length === 0,
+                    isCttDd,
                     packedTracks,
                     scannedTracks: scanned,
                     invalidTracks
@@ -2532,11 +2557,8 @@ Faltam produtos do Packing:
                 if (!trackCheck.packedTracks || !trackCheck.packedTracks.length) {
                     return { ok: false, message: _t('O PACKING deste ID não tem tracking registado. Não é possível fechar o Return.') };
                 }
-                if (!trackCheck.match) {
-                    scanData._returnTrackingMismatch = {
-                        packedTracks: trackCheck.packedTracks.slice(),
-                        scannedTracks: trackCheck.scannedTracks.slice()
-                    };
+                if (trackCheck.isCttDd && !trackCheck.match) {
+                    return { ok: false, message: _t('Tracking CTT incorreto. Para PACKING com tracking DD, tens de picar exatamente o mesmo tracking do PACKING.') + '\n\nPACKING: ' + trackCheck.packedTracks.join(' | ') };
                 }
             }
 
@@ -2569,8 +2591,11 @@ Faltam produtos do Packing:
             if (_isReturnMode(m) && st === 'INCOMPLETE' && (!check.missingProds || check.missingProds.length === 0)) {
                 return { ok: false, check, message: 'Este RETURN já está completo face ao PACKING. Fecha como RETURN COMPLETO.' };
             }
-            if (_isRefundMode(m) && st === 'INCOMPLETE') {
-                return { ok: false, check, message: 'Num REFUND, o cliente pode devolver apenas parte da encomenda. Se os produtos são válidos, fecha como REFUND COMPLETO.' };
+            if (_isRefundMode(m) && st === 'COMPLETE' && check.missingProds && check.missingProds.length) {
+                return { ok: false, check, message: 'Este REFUND está correto, mas o cliente devolveu apenas parte da encomenda. Usa REFUND OK, BUT INCOMPLETE.' };
+            }
+            if (_isRefundMode(m) && st === 'OK_INCOMPLETE' && (!check.missingProds || check.missingProds.length === 0)) {
+                return { ok: false, check, message: 'Este REFUND contém todos os produtos do PACKING. Fecha como REFUND COMPLETO.' };
             }
 
             return { ok: true, check };
@@ -2742,6 +2767,31 @@ Faltam produtos do Packing:
             });
         }
 
+        async function maybeAutoCompleteReturn(mode) {
+            const m = (mode || currentMode || '').toString().toUpperCase();
+            if (!_isReturnMode(m) || !scanData || scanData._autoCompletingReturn) return false;
+            if (!scanData.id || !scanData.track || !hasCurrentReturnRefundProducts()) return false;
+            if (scanData._idPackingPending || !scanData._idPackingVerified) return false;
+
+            await refreshPreviousIncompleteProducts(m);
+            const remainingCheck = await checkReturnRefundOnlyRemainingProducts(m, { skipRefresh: true });
+            if (remainingCheck && !remainingCheck.ok) return false;
+            const check = await checkReturnVsPacking(scanData.id, getReturnRefundCompareProds());
+            if (!check || !check.found || !check.match || (check.extraProds && check.extraProds.length)) return false;
+
+            const trackCheck = await checkReturnTrackingVsPacking(scanData.id, scanData.tracks && scanData.tracks.length ? scanData.tracks : [scanData.track]);
+            if (!trackCheck || !trackCheck.found || !trackCheck.packedTracks || !trackCheck.packedTracks.length) return false;
+            if (trackCheck.isCttDd && !trackCheck.match) return false;
+
+            scanData._autoCompletingReturn = true;
+            try {
+                await confirmOrder('RETURN', { auto: true });
+                return true;
+            } finally {
+                if (scanData && scanData._autoCompletingReturn) scanData._autoCompletingReturn = false;
+            }
+        }
+
         // Called when ID or products change in RETURN/REFUND mode — updates status banner + buttons
         async function updateReturnRefundStatus(mode) {
             const m = (mode || currentMode || '').toString().toUpperCase();
@@ -2819,7 +2869,7 @@ Faltam produtos do Packing:
                     statusEl.style.border = '1px solid #fed7aa';
                     statusEl.innerHTML = isRefund
                         ? '⚠️ Pica pelo menos <b>1 produto</b> antes de fechar o REFUND normal.<br><small>Se for SWIPE, SEM PRODUTO, PRODUTO DANIFICADO ou CAIXA DANIFICADA, podes usar o botão correspondente mesmo sem tracking e sem produtos completos.</small>' + packedHtml
-                        : '⚠️ Pica pelo menos <b>1 produto</b> antes de fechar o REFUND normal.' + packedHtml;
+                        : _t('⚠️ Pica pelo menos 1 produto antes de continuar o RETURN.') + packedHtml;
                 }
                 return;
             }
@@ -2830,7 +2880,7 @@ Faltam produtos do Packing:
                 statusEl.style.background = '#f1f5f9';
                 statusEl.style.border = '1px solid #e2e8f0';
                 statusEl.style.color = '#64748b';
-                statusEl.innerHTML = '🔍 A verificar packing...';
+                statusEl.innerHTML = _t('🔍 A verificar packing...');
             }
 
             await refreshPreviousIncompleteProducts(m);
@@ -2854,7 +2904,7 @@ Faltam produtos do Packing:
                     statusEl.style.background = '#fef2f2';
                     statusEl.style.color = '#991b1b';
                     statusEl.style.border = '1px solid #fecaca';
-                    statusEl.innerHTML = `⛔ ID sem PACKING — operação bloqueada. Carrega em CLEAR SCAN e pica um ID válido.`;
+                    statusEl.innerHTML = _t('⛔ ID sem PACKING — operação bloqueada. Carrega em CLEAR SCAN e pica um ID válido.');
                 }
                 return;
             }
@@ -2873,18 +2923,21 @@ Faltam produtos do Packing:
             }
 
             if (isRefund) {
-                if (btnComplete) btnComplete.style.display = 'block';
-                if (btnIncomplete) btnIncomplete.style.display = 'none';
+                const hasMissing = !!(check.missingProds && check.missingProds.length);
+                if (btnComplete) btnComplete.style.display = hasMissing ? 'none' : 'block';
+                if (btnIncomplete) btnIncomplete.style.display = hasMissing ? 'block' : 'none';
                 if (statusEl) {
                     statusEl.style.background = '#f0fdf4';
                     statusEl.style.color = '#166534';
                     statusEl.style.border = '1px solid #bbf7d0';
-                    const details = (check.missingProds && check.missingProds.length)
-                        ? `<br><small>ℹ️ O cliente manteve/não devolveu: ${check.missingProds.join(', ')}. Isto não torna o Refund incompleto.</small>`
+                    const details = hasMissing
+                        ? `<br><small>ℹ️ O cliente devolveu apenas parte da encomenda: ${check.missingProds.join(', ')} ficou por devolver. Usa REFUND OK, BUT INCOMPLETE.</small>`
                         : '';
-                    statusEl.innerHTML = `✅ Produto(s) válidos para este ID. O REFUND pode ser fechado.${details}${packedHtml}`;
+                    statusEl.innerHTML = `✅ Produto(s) válidos para este ID.${details}${packedHtml}`;
                 }
                 setRefundActionButtonsVisible();
+                if (btnComplete) btnComplete.style.display = hasMissing ? 'none' : 'block';
+                if (btnIncomplete) btnIncomplete.style.display = hasMissing ? 'block' : 'none';
             } else if (check.match) {
                 if (btnComplete) btnComplete.style.display = 'block';
                 if (btnIncomplete) btnIncomplete.style.display = 'none';
@@ -3045,7 +3098,7 @@ Faltam produtos do Packing:
             const tbody = document.querySelector('#return-alerts-table tbody');
             const summary = document.getElementById('return-alert-summary');
             if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="8">A carregar...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">' + _t('A carregar...') + '</td></tr>';
             try {
                 const snap = await db.ref('return_alerts').once('value');
                 const data = snap.val() || {};
@@ -3058,18 +3111,18 @@ Faltam produtos do Packing:
                     return ao - bo || (b.updatedTs || 0) - (a.updatedTs || 0);
                 });
                 const openCount = rows.filter(a => (a.status || '').toUpperCase() === 'OPEN').length;
-                if (summary) summary.textContent = openCount + ' alerta(s) aberto(s)';
+                if (summary) summary.textContent = openCount + ' ' + _t('alerta(s) aberto(s)');
                 if (filter === 'OPEN') rows = rows.filter(a => (a.status || '').toUpperCase() === 'OPEN');
                 if (filter === 'RESOLVED') rows = rows.filter(a => (a.status || '').toUpperCase() !== 'OPEN');
                 if (!rows.length) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px;">Sem alertas para este filtro.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px;">' + _t('Sem alertas para este filtro.') + '</td></tr>';
                     return;
                 }
                 tbody.innerHTML = rows.map(function (a) {
                     const open = (a.status || '').toUpperCase() === 'OPEN';
-                    const state = open ? '🚨 ABERTO' : ((a.status || '') === 'RESOLVED_MANUAL' ? '✅ FECHADO ADMIN' : '✅ RESOLVIDO');
+                    const state = open ? _t('🚨 ABERTO') : ((a.status || '') === 'RESOLVED_MANUAL' ? _t('✅ FECHADO ADMIN') : _t('✅ RESOLVIDO'));
                     const resolution = open ? '-' : (_fmt(a.resolutionReason) + (a.resolvedBy ? '<br><small>' + _fmt(a.resolvedBy) + ' · ' + _fmt(a.resolvedAt) + '</small>' : ''));
-                    const action = open && isAdminUser ? `<button type="button" onclick="openReturnAlertResolveModal('${_fmt(a.id).replace(/'/g, "\\'")}')" style="background:#16a34a; padding:8px 12px;">COMPLETAR ID</button>` : '-';
+                    const action = open && isAdminUser ? `<button type="button" onclick="openReturnAlertResolveModal('${_fmt(a.id).replace(/'/g, "\\'")}')" style="background:#16a34a; padding:8px 12px;">${_t('COMPLETAR ID')}</button>` : '-';
                     return `<tr>
                         <td><b>${_fmt(a.id)}</b></td>
                         <td>${_fmt(a.tracks || a.track || '-')}</td>
@@ -3083,7 +3136,7 @@ Faltam produtos do Packing:
                 }).join('');
             } catch (e) {
                 console.error('loadReturnAlerts', e);
-                tbody.innerHTML = '<tr><td colspan="8">Erro ao carregar alertas.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8">' + _t('Erro ao carregar alertas.') + '</td></tr>';
             }
         }
         let __alertsSubtab = 'RETURN';
@@ -3103,118 +3156,8 @@ Faltam produtos do Packing:
         async function loadActiveAlertTab() {
             if (__alertsSubtab === 'RETURN') {
                 await loadReturnAlerts();
-                await loadTrackingAlerts('RETURN');
             }
         }
-
-        async function createTrackingMismatchAlert(mode, orderId, mismatch, recordKey) {
-            if (!orderId || !mismatch || !Array.isArray(mismatch.scannedTracks) || !mismatch.scannedTracks.length) return;
-            const now = Date.now();
-            const user = currentUser && currentUser.email ? currentUser.email.split('@')[0].toUpperCase() : 'SYSTEM';
-            const payload = {
-                mode: (mode || 'RETURN').toUpperCase(),
-                type: 'TRACKING_MISMATCH',
-                id: String(orderId),
-                packedTracks: (mismatch.packedTracks || []).join(' | '),
-                scannedTracks: (mismatch.scannedTracks || []).join(' | '),
-                regKey: recordKey || '',
-                status: 'OPEN',
-                dateClean: _nowDateClean(),
-                time: _nowTime(),
-                createdAt: _nowDateTime(),
-                createdTs: now,
-                createdBy: user
-            };
-            await db.ref('tracking_alerts').push(payload);
-            await db.ref('return_alert_logs').push({
-                id: payload.id, action: 'TRACKING_MISMATCH_ALERT_OPENED', mode: payload.mode,
-                packedTracks: payload.packedTracks, scannedTracks: payload.scannedTracks,
-                regKey: payload.regKey, user: user, dateClean: payload.dateClean, time: payload.time, ts: now
-            });
-        }
-
-        async function dismissTrackingAlert(alertKey) {
-            if (!isAdminUser) return alert('Apenas administradores podem eliminar alertas.');
-            if (!alertKey) return;
-            const ref = db.ref('tracking_alerts/' + alertKey);
-            const snap = await ref.once('value');
-            const existing = snap.val();
-            if (!existing || (existing.status || '').toUpperCase() !== 'OPEN') return loadTrackingAlerts('RETURN');
-            const now = Date.now();
-            const user = currentUser && currentUser.email ? currentUser.email.split('@')[0].toUpperCase() : 'ADMIN';
-            await ref.update({ status: 'DISMISSED', dismissedBy: user, dismissedAt: _nowDateTime(), dismissedTs: now });
-            await db.ref('return_alert_logs').push({
-                id: existing.id || '', action: 'TRACKING_MISMATCH_ALERT_DISMISSED', mode: existing.mode || 'RETURN',
-                alertKey: alertKey, user: user, dateClean: _nowDateClean(), time: _nowTime(), ts: now
-            });
-            await loadTrackingAlerts((existing.mode || 'RETURN').toUpperCase());
-        }
-
-        async function dismissTodayTrackingAlerts(mode) {
-            if (!isAdminUser) return alert('Apenas administradores podem eliminar alertas.');
-            const m = (mode || 'RETURN').toUpperCase();
-            const today = _nowDateClean();
-            const snap = await db.ref('tracking_alerts').once('value');
-            const data = snap.val() || {};
-            const targets = Object.entries(data).filter(function (entry) {
-                const a = entry[1] || {};
-                return (a.mode || '').toUpperCase() === m && (a.status || '').toUpperCase() === 'OPEN' && a.dateClean === today;
-            });
-            if (!targets.length) return alert('Não existem alertas de tracking abertos de hoje.');
-            if (!confirm('Eliminar ' + targets.length + ' alerta(s) de tracking de hoje? O histórico ficará registado.')) return;
-            const now = Date.now();
-            const user = currentUser && currentUser.email ? currentUser.email.split('@')[0].toUpperCase() : 'ADMIN';
-            const updates = {};
-            targets.forEach(function (entry) {
-                updates[entry[0] + '/status'] = 'DISMISSED';
-                updates[entry[0] + '/dismissedBy'] = user;
-                updates[entry[0] + '/dismissedAt'] = _nowDateTime();
-                updates[entry[0] + '/dismissedTs'] = now;
-            });
-            await db.ref('tracking_alerts').update(updates);
-            await db.ref('return_alert_logs').push({
-                action: 'TRACKING_MISMATCH_ALERTS_DISMISSED_DAY', mode: m, count: targets.length,
-                day: today, user: user, dateClean: today, time: _nowTime(), ts: now
-            });
-            await loadTrackingAlerts(m);
-        }
-
-        async function loadTrackingAlerts(mode) {
-            const m = (mode || 'RETURN').toUpperCase();
-            const tableId = m === 'RETURN' ? 'return-tracking-alerts-table' : 'refund-tracking-alerts-table';
-            const summaryId = m === 'RETURN' ? 'return-tracking-alert-summary' : 'refund-tracking-alert-summary';
-            const tbody = document.querySelector('#' + tableId + ' tbody');
-            const summary = document.getElementById(summaryId);
-            if (!tbody) return;
-            tbody.innerHTML = '<tr><td colspan="6">A carregar...</td></tr>';
-            try {
-                const snap = await db.ref('tracking_alerts').once('value');
-                const data = snap.val() || {};
-                let rows = Object.entries(data).map(function (entry) { return { key: entry[0], data: entry[1] || {} }; })
-                    .filter(function (x) { return (x.data.mode || '').toUpperCase() === m && (x.data.status || '').toUpperCase() === 'OPEN'; })
-                    .sort(function (a, b) { return (b.data.createdTs || 0) - (a.data.createdTs || 0); });
-                if (summary) summary.textContent = rows.length + ' alerta(s) de tracking aberto(s)';
-                if (!rows.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:22px;">Sem alertas de tracking.</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = rows.map(function (x) {
-                    const a = x.data;
-                    return '<tr>' +
-                        '<td><b>' + _fmt(a.id) + '</b></td>' +
-                        '<td>' + _fmt(a.packedTracks || '-') + '</td>' +
-                        '<td style="color:#b91c1c; font-weight:800;">' + _fmt(a.scannedTracks || '-') + '</td>' +
-                        '<td>' + _fmt(a.createdAt || '-') + '</td>' +
-                        '<td>' + _fmt(a.createdBy || '-') + '</td>' +
-                        '<td>' + (isAdminUser ? '<button type="button" onclick="dismissTrackingAlert(\'' + x.key.replace(/'/g, "\\'") + '\')" style="background:#b91c1c; padding:8px 12px;">ELIMINAR ALERTA</button>' : '-') + '</td>' +
-                    '</tr>';
-                }).join('');
-            } catch (e) {
-                console.error('loadTrackingAlerts', e);
-                tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar alertas de tracking.</td></tr>';
-            }
-        }
-
 
         async function confirmRefundSpecial(reasonLabel, statusKey) {
             const m = 'REFUND';
@@ -3322,6 +3265,49 @@ Faltam produtos do Packing:
             return confirmRefundSpecial('SWIPE', 'SWIPE');
         }
 
+        async function confirmRefundOkIncomplete() {
+            const m = 'REFUND';
+            const validation = await validateReturnRefundBeforeClose(m, 'OK_INCOMPLETE');
+            if (!validation.ok) return alert(validation.message);
+            if (!scanData.id || !scanData.track || !hasCurrentReturnRefundProducts()) return alert(_t('Faltam dados!'));
+
+            const workDc = _nowDateClean();
+            const endTime = _nowTime();
+            const endTs = Date.now();
+            try {
+                const allTracks = (scanData.tracks && scanData.tracks.length > 0) ? scanData.tracks : [scanData.track];
+                const previous = Array.isArray(scanData._prevIncompleteProds) ? scanData._prevIncompleteProds : [];
+                const payload = {
+                    id: scanData.id,
+                    track: allTracks[0],
+                    tracks: allTracks.join(' | '),
+                    volumes: allTracks.length,
+                    prods: scanData.prods.join(' | ') || 'No Items',
+                    prevProds: previous.join(' | ') || '',
+                    allProds: [...previous, ...scanData.prods].join(' | ') || '',
+                    mode: m,
+                    returnStatus: 'OK_INCOMPLETE',
+                    batch: 'GENERAL',
+                    user: currentUser.email.split('@')[0].toUpperCase(),
+                    startTime: scanData.startTime || endTime,
+                    endTime: endTime,
+                    startTs: (typeof scanData.startTs === 'number') ? scanData.startTs : null,
+                    endTs: endTs,
+                    time: endTime,
+                    dateClean: workDc,
+                    DateTime: _dtKey(workDc, endTime),
+                    workDateClean: workDc,
+                    workDateTime: _dtKey(workDc, endTime),
+                    ts: Date.now()
+                };
+                const regRef = await db.ref('registos').push(payload);
+                await whSheetsSendReturnRefundRecord(regRef.key, payload);
+                resetScan();
+            } catch (e) {
+                alert(_t('Erro ao gravar.'));
+            }
+        }
+
         // Save return/refund as INCOMPLETE
         async function confirmOrderIncomplete(mode) {
             const m = mode || currentMode;
@@ -3366,9 +3352,6 @@ Faltam produtos do Packing:
                 if (_isReturnMode(m)) {
                     const alertCheck = await checkReturnVsPacking(scanData.id, _allCombinedProds);
                     await upsertReturnIncompleteAlert(scanData.id, alertCheck, regRef.key, returnRefundRecord);
-                    if (scanData._returnTrackingMismatch) {
-                        await createTrackingMismatchAlert(m, scanData.id, scanData._returnTrackingMismatch, regRef.key);
-                    }
                 }
                 resetScan();
             } catch (e) {
@@ -3593,9 +3576,6 @@ Faltam produtos do Packing:
                 await whSheetsSendReturnRefundRecord(regRef.key, recordPayload);
                 if (_isReturnMode(m)) {
                     await resolveReturnAlertAutomatically(scanData.id, regRef.key);
-                    if (scanData._returnTrackingMismatch) {
-                        await createTrackingMismatchAlert(m, scanData.id, scanData._returnTrackingMismatch, regRef.key);
-                    }
                 }
 
                 let __packingBatchAutoCompleted = false;
@@ -4652,7 +4632,7 @@ Missing: ${sample}${more}`);
                     const modal = document.getElementById('volumes-alert-modal');
                     const msg = document.getElementById('volumes-alert-msg');
                     if (modal && msg) {
-                        msg.innerHTML = `Este ID tem <span style="font-size:36px; color:#f59e0b; font-weight:900;">${vols} volumes</span>.<br>Tens de picar <b>${vols} trackings</b> diferentes antes de confirmar.`;
+                        msg.innerHTML = `Este ID tem <span style="font-size:36px; color:#f59e0b; font-weight:900;">${vols} volumes</span>.<br>Tens de picar <b>${vols} trackings</b> antes de confirmar.`;
                         modal.style.display = 'flex';
                     }
                 } else {
@@ -4952,8 +4932,8 @@ Missing: ${sample}${more}`);
 
                 tbody.innerHTML = rows.map(r => {
                     const stKey = (r.returnStatus || 'COMPLETE').toString().toUpperCase();
-                    const stColor = stKey === 'INCOMPLETE' ? '#f59e0b' : (stKey === 'NO_PRODUCT' ? '#475569' : (stKey === 'PRODUCT_DAMAGED' ? '#7f1d1d' : (stKey === 'BOX_DAMAGED' ? '#92400e' : (stKey === 'NO_PRODUCT_DAMAGED' ? '#475569' : (stKey === 'SWIPE' ? '#0ea5e9' : '#28a745')))));
-                    const stLabel = stKey === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : (stKey === 'NO_PRODUCT' ? '🚫 SEM PRODUTO' : (stKey === 'PRODUCT_DAMAGED' ? '🛠️ PRODUTO DANIFICADO' : (stKey === 'BOX_DAMAGED' ? '📦 CAIXA DANIFICADA' : (stKey === 'NO_PRODUCT_DAMAGED' ? '🚫 SEM PRODUTO' : (stKey === 'SWIPE' ? 'SWIPE' : '✅ COMPLETO')))));
+                    const stColor = stKey === 'OK_INCOMPLETE' ? '#f59e0b' : (stKey === 'INCOMPLETE' ? '#f59e0b' : (stKey === 'NO_PRODUCT' ? '#475569' : (stKey === 'PRODUCT_DAMAGED' ? '#7f1d1d' : (stKey === 'BOX_DAMAGED' ? '#92400e' : (stKey === 'NO_PRODUCT_DAMAGED' ? '#475569' : (stKey === 'SWIPE' ? '#0ea5e9' : '#28a745'))))));
+                    const stLabel = stKey === 'OK_INCOMPLETE' ? '✅ OK, BUT INCOMPLETE' : (stKey === 'INCOMPLETE' ? '⚠️ INCOMPLETO' : (stKey === 'NO_PRODUCT' ? '🚫 SEM PRODUTO' : (stKey === 'PRODUCT_DAMAGED' ? '🛠️ PRODUTO DANIFICADO' : (stKey === 'BOX_DAMAGED' ? '📦 CAIXA DANIFICADA' : (stKey === 'NO_PRODUCT_DAMAGED' ? '🚫 SEM PRODUTO' : (stKey === 'SWIPE' ? 'SWIPE' : '✅ COMPLETO'))))));
                     const hasPrev = r.prevProds && r.prevProds !== '';
                     const prevBadge = hasPrev ? `<span title="Fechado com produtos de picagem anterior" style="background:#ede9fe;color:#6d28d9;border:1px solid #c4b5fd;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:900;margin-left:4px;">+PARCIAL</span>` : '';
                     return `
@@ -5542,7 +5522,7 @@ Missing: ${sample}${more}`);
                 'Pica os produtos deste ID. Ainda falta:': 'Scan the products for this ID. Still missing:',
                 'PICAR TRACKING': 'SCAN TRACKING',
                 '3. PICAR TRACKING': '3. SCAN TRACKING',
-                'Produtos certos. Agora pica todos os volumes/trackings.': 'Products correct. Now scan all volumes/trackings for this ID. They can be the same or different.',
+                'Produtos certos. Agora pica todos os volumes/trackings.': 'Products correct. Now scan all volumes/trackings for this ID.',
                 'Faltam': 'Remaining:',
                 'Produtos certos. Agora pica o tracking. O ID fecha automaticamente depois do tracking.': 'Products correct. Now scan the tracking. The ID closes automatically after tracking.',
                 'A FECHAR ID...': 'CLOSING ID...',
@@ -5582,6 +5562,41 @@ Missing: ${sample}${more}`);
                 'A apagar registo...': 'Deleting record...',
                 'A recolher': 'Picking',
                 '\u2139\uFE0F Pica o ID. REFUND normal precisa de ID + tracking + pelo menos 1 produto. SWIPE / SEM PRODUTO / PRODUTO DANIFICADO / CAIXA DANIFICADA podem fechar só com ID.': '\u2139\uFE0F Scan the ID. COMPLETE/INCOMPLETE require ID + tracking + product. SWIPE / NO PRODUCT / DAMAGED PRODUCT / DAMAGED BOX can close with ID only.',
+                'ALERTAS': 'ALERTS',
+                '🚨 ALERTAS': '🚨 ALERTS',
+                'Incidências registadas sem bloquear o trabalho do operador.': 'Incidents recorded without blocking the operator workflow.',
+                'ATUALIZAR': 'REFRESH',
+                'Returns incompletos': 'Incomplete returns',
+                'IDs que ainda não reconciliaram 100% do PACKING.': 'IDs that have not yet reconciled 100% of the PACKING.',
+                'ABERTOS': 'OPEN',
+                'TODOS': 'ALL',
+                'RESOLVIDOS': 'RESOLVED',
+                'Falta': 'Missing',
+                'Recebido': 'Received',
+                'Aberto em': 'Opened at',
+                'Estado': 'Status',
+                'Resolução': 'Resolution',
+                'Ação': 'Action',
+                'Tracking em RETURN: se o tracking do PACKING começar por DD, o sistema exige o mesmo tracking. Nos restantes casos, o tracking recebido pode ser diferente e não gera alerta.': 'RETURN tracking: if the PACKING tracking starts with DD, the system requires the exact same tracking. In all other cases, the received tracking may be different and does not generate an alert.',
+                'Refunds': 'Refunds',
+                'O tracking do REFUND pode ser diferente por definição, por isso não gera alerta. Os produtos continuam a ser validados contra o PACKING do ID e podem representar apenas uma devolução parcial do cliente.': 'REFUND tracking may be different by design, so it does not generate an alert. Products are still validated against the ID PACKING and may represent only a partial customer return.',
+                '✅ Completar ID administrativamente': '✅ Complete ID administratively',
+                'Justificação obrigatória': 'Mandatory justification',
+                'Ex.: Produto perdido pela transportadora; reclamação aceite e valor reembolsado.': 'Example: Product lost by the carrier; claim accepted and amount reimbursed.',
+                'CANCELAR': 'CANCEL',
+                'COMPLETAR ID': 'COMPLETE ID',
+                'A carregar...': 'Loading...',
+                'alerta(s) aberto(s)': 'open alert(s)',
+                'Sem alertas para este filtro.': 'No alerts for this filter.',
+                '🚨 ABERTO': '🚨 OPEN',
+                '✅ FECHADO ADMIN': '✅ CLOSED BY ADMIN',
+                '✅ RESOLVIDO': '✅ RESOLVED',
+                'Erro ao carregar alertas.': 'Error loading alerts.',
+                '⚠️ Pica pelo menos 1 produto antes de continuar o RETURN.': '⚠️ Scan at least 1 product before continuing the RETURN.',
+                '🔍 A verificar packing...': '🔍 Checking packing...',
+                '⛔ ID sem PACKING — operação bloqueada. Carrega em CLEAR SCAN e pica um ID válido.': '⛔ ID without PACKING — operation blocked. Press CLEAR SCAN and scan a valid ID.',
+                'Este ID já tem um RETURN COMPLETO registado. Novo Return bloqueado.': 'This ID already has a COMPLETE RETURN recorded. New Return blocked.',
+                'Tracking CTT incorreto. Para PACKING com tracking DD, tens de picar exatamente o mesmo tracking do PACKING.': 'Incorrect CTT tracking. For PACKING with a DD tracking, you must scan exactly the same PACKING tracking.',
                 // Additional alerts
                 'Faltam dados!': 'Missing data!',
                 'Faltam dados (ID e tracking)!': 'Missing data (ID and tracking)!',
@@ -5637,7 +5652,6 @@ Missing: ${sample}${more}`);
             window._lang = lang;
             try { localStorage.setItem('wh_lang', lang); } catch(e) {}
 
-            // Update flag visuals
             var pt = document.getElementById('flag-pt');
             var en = document.getElementById('flag-en');
             if (pt) pt.style.opacity = lang === 'pt' ? '1' : '0.35';
@@ -5645,7 +5659,6 @@ Missing: ${sample}${more}`);
 
             const tr = window._translations.en;
 
-            // Update all [data-i18n] elements
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (lang === 'en' && tr[key] !== undefined) {
@@ -5663,22 +5676,26 @@ Missing: ${sample}${more}`);
                 }
             });
 
-            // Update placeholders
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
                 el.placeholder = lang === 'en' ? (tr[key] || key) : key;
             });
 
-            // Re-run packing guidance to update dynamic text
             try { updatePackingGuidance && updatePackingGuidance(); } catch(e) {}
 
-            // Re-translate visible status banners in returns/refunds
             ['rv-pack-status', 'fv-pack-status'].forEach(function(id) {
                 var el = document.getElementById(id);
                 if (el && el.style.display !== 'none' && el._i18nKey) {
                     el.innerHTML = _t(el._i18nKey);
                 }
             });
+            try {
+                if (_isReturnMode(currentMode) || _isRefundMode(currentMode)) updateReturnRefundStatus(currentMode);
+            } catch(e) {}
+            try {
+                var alertsSec = document.getElementById('sec-alerts');
+                if (alertsSec && alertsSec.classList.contains('active')) loadActiveAlertTab();
+            } catch(e) {}
         };
     </script>
 
